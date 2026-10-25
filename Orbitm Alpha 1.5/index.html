@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Orbitm · Alpha 1.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b17;--pn:rgba(16,24,44,.86);--ln:rgba(160,190,255,.14);--tx:#e6ecff;--mu:#8b98bd;--ac:#7fe3c9}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font:13px Sora,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.box{background:var(--pn);backdrop-filter:blur(10px);border:1px solid var(--ln);border-radius:12px}
+#panel{position:fixed;top:12px;left:12px;width:256px;max-height:calc(100% - 24px);overflow:auto;padding:14px}
+h1{font-size:17px;margin:0 0 4px;font-weight:600}
+h2{font-size:12px;color:var(--mu);margin:14px 0 6px;font-weight:400}
+.row{display:flex;gap:5px;flex-wrap:wrap}
+button,input{font:inherit;color:var(--tx)}
+button{background:rgba(255,255,255,.06);border:1px solid var(--ln);border-radius:7px;padding:6px 9px;cursor:pointer;flex:1;white-space:nowrap}
+button:hover{background:rgba(255,255,255,.13)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button.on{background:var(--ac);color:#04221b;border-color:var(--ac);font-weight:600}
+input[type=text],input[type=number]{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--ln);border-radius:7px;padding:6px 8px}
+input[type=range]{width:100%;accent-color:var(--ac)}
+input[type=color]{width:100%;height:30px;border:1px solid var(--ln);border-radius:7px;background:none;padding:2px}
+label{display:block;color:var(--mu);margin:9px 0 3px}
+#hint{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:7px 16px;border-radius:20px;pointer-events:none;white-space:nowrap;max-width:calc(100% - 300px)}
+#bar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;padding:7px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 290px)}
+#bar button{flex:none}#bar span{color:var(--mu);min-width:44px;text-align:center}
+.hide{display:none!important}
+#dict{position:fixed;z-index:40;top:12px;right:12px;width:320px;max-height:calc(100% - 100px);overflow:auto;padding:14px}
+details{border-top:1px solid var(--ln);padding:7px 0}summary{cursor:pointer;font-weight:600}details p{color:var(--tx);line-height:1.55;margin:6px 0 2px}
+#toast{position:fixed;z-index:60;bottom:76px;left:50%;transform:translateX(-50%);padding:8px 14px}
+.inmenu #panel,.inmenu #bar,.inmenu #hint,.inmenu #pshow,.inmenu #tip{display:none!important}
+#menu{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(7,11,23,.5),rgba(7,11,23,.9))}
+.mb{display:block;width:100%;flex:none;background:rgba(255,255,255,.08)!important;color:#e6ecff!important;border:1px solid rgba(255,255,255,.2)!important;padding:12px;font-size:15px;margin-bottom:9px}
+.mb.pri{background:var(--ac)!important;color:#04221b!important;font-weight:600;border-color:var(--ac)!important}
+#vlist h3{margin:16px 0 4px;font-size:14px;color:var(--ac);font-weight:600}#vlist ul{margin:0;padding-left:18px;line-height:1.55}
+#pm{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;background:rgba(5,8,18,.6)}
+#pm button{display:block;width:100%;flex:none;margin-top:8px;padding:10px}
+#tip{z-index:20;max-width:260px;padding:9px 11px;line-height:1.5}#tip a{color:var(--ac);cursor:pointer;display:block;margin-top:5px}
+.ch{border-top:1px solid var(--ln);padding:9px 0}.ch.done b::after{content:' ✓';color:var(--ac)}
+html[data-theme=light]{--bg:#eef1f8;--pn:rgba(255,255,255,.92);--ln:rgba(20,40,90,.18);--tx:#16203a;--mu:#56627f;--ac:#0b8c70}
+html[data-theme=light] button{background:rgba(20,40,90,.07)}html[data-theme=light] button:hover{background:rgba(20,40,90,.16)}html[data-theme=light] button.on{color:#fff}
+html[data-theme=light] input[type=text],html[data-theme=light] input[type=number]{background:rgba(255,255,255,.9)}
+@media(max-width:760px){#dict{width:calc(100% - 24px)}#panel{width:210px}#hint{top:auto;bottom:70px;max-width:92%;white-space:normal;text-align:center}#bar{flex-wrap:wrap;justify-content:center;width:94%;max-width:94%}}
+</style></head><body class="inmenu">
+<canvas id="c"></canvas>
+<div id="menu"><div id="mmain" style="text-align:center;width:min(330px,90%)">
+<div style="font-size:56px;font-weight:600;color:#e6ecff;line-height:1.1">Orbitm</div>
+<div style="color:var(--ac);margin:4px 0 4px">Alpha 1.5</div><div style="color:#9aa6c9;margin-bottom:28px">A gravity sandbox</div>
+<button id="mplay" class="mb pri">Play</button><button id="mpre" class="mb">Presets</button><button id="mdict" class="mb">Dictionary</button><button id="mhist" class="mb">Version history</button><button id="mset" class="mb">Settings</button></div>
+<div id="mhistv" class="box hide" style="width:min(560px,92%);max-height:82%;overflow:auto;padding:18px"><div class="row" style="align-items:center"><b style="flex:1;font-size:17px">Version history</b><button id="mback" style="flex:none">Back</button></div><div id="vlist"></div></div></div>
+<div id="pm" class="hide"><div class="box" style="width:min(300px,90%);padding:18px"><b style="font-size:17px">Paused</b>
+<button id="pmr" class="on" style="margin-top:12px">Resume</button><button id="pms">Save</button><button id="pml">Load</button><button id="pmt">Settings</button><button id="pmq">Quit to main menu</button></div></div>
+<div id="hint" class="box"></div>
+<button id="pshow" class="box hide" style="position:fixed;top:12px;left:12px;padding:8px 14px;color:var(--tx)">Panel</button>
+<div id="panel" class="box">
+<div class="row" style="align-items:center"><h1 style="flex:1">Orbitm</h1><button id="phide" style="flex:none">Hide</button></div><div style="color:var(--ac);font-size:12px;margin:-2px 0 2px">Alpha 1.5</div>
+<h2>What to place</h2>
+<div class="row" id="types"><button data-t="star">Star</button><button data-t="planet">Planet</button><button data-t="asteroid">Asteroid</button><button data-t="bh">Black hole</button><button data-t="select">Inspect</button></div>
+<div id="opts">
+<h2>Placement</h2>
+<div class="row" id="modes"><button data-m="point">Point (at rest)</button><button data-m="orbit">Orbit</button></div>
+<div id="orbopts"><div class="row" style="margin-top:6px"><button id="ccw">Counter-clockwise</button><button id="cw">Clockwise</button></div>
+<label>Orbit speed ×<span id="sfv">1.00</span> (1 = circular)</label><input type="range" id="sf" min=".3" max="1.5" step=".01" value="1"></div>
+<label>Name (blank = automatic)</label><input type="text" id="name">
+<label>Mass</label><input type="number" id="mass" min="0" step="any">
+<div id="radrow"><label>Size <span id="radv"></span></label><input type="range" id="rad" min="1" max="60" step=".5"></div>
+<div id="colrow"><label>Colour</label><input type="color" id="col"></div>
+<div id="cntrow"><label>How many (1–300)</label><input type="number" id="cnt" value="1" min="1" max="300"></div>
+</div>
+<div id="selbox" class="hide"><h2>Selected object</h2><div id="selinfo" style="line-height:1.6"></div>
+<div class="row" id="gtabs" style="margin-top:6px"><button data-g="0" class="on" data-d="orbit">Distance</button><button data-g="1" data-d="speed">Speed</button><button data-g="2" data-d="energy">Energy</button></div>
+<canvas id="gr" width="464" height="150" style="position:static;width:100%;height:75px;margin-top:4px;touch-action:auto;cursor:default;background:#0b1226;border-radius:7px"></canvas>
+<div style="color:var(--mu);font-size:11px">Last 75 s of simulation time</div>
+<label>Name</label><input type="text" id="sname">
+<label>Mass</label><input type="number" id="smass" min="0" step="any">
+<div id="srad"><label>Size</label><input type="range" id="srd" min="1" max="60" step=".5"></div>
+<div id="scol"><label>Colour</label><input type="color" id="sc"></div>
+<div class="row" style="margin-top:8px"><button id="svel">Set velocity</button><button id="sstop">Stop it</button></div>
+<div class="row" style="margin-top:5px"><button id="sdict">Learn about this</button><button id="del">Delete</button></div><div class="row" style="margin-top:5px"><button id="sfol" style="width:100%">Follow this</button></div></div>
+<h2>Physics and realism</h2><div class="row"><button id="pRoche">Tidal breakup</button><button id="pHZ">Habitable zones</button><button id="pLag">Lagrange points</button><button id="pLens">Black hole lensing</button><button id="pReal">Real units</button></div>
+<h2>Project</h2><div class="row"><button id="save">Save file</button><button id="load">Load file</button><button id="share">Share link</button></div>
+<input type="file" id="file" accept=".json,application/json" class="hide"><div class="row" style="margin-top:6px"><button id="dictbtn">Dictionary</button><button id="chbtn">Challenges</button><button id="prebtn">Presets</button><button id="setbtn">Settings</button></div>
+<h2>Camera</h2><div style="color:var(--mu);line-height:1.5">Scroll to zoom. Right-drag or middle-drag to move. Space pauses, Esc opens the menu.</div>
+</div>
+<div id="dict" class="box hide"><div class="row" style="align-items:center"><button id="tabd" class="on">Dictionary</button><button id="tabc">Challenges</button><button id="tabp">Presets</button><button id="dx" style="flex:none">Close</button></div>
+<input type="text" id="dq" placeholder="Search…" style="margin:8px 0"><div id="dl"></div></div>
+<div id="toast" class="box hide"></div>
+<div id="tip" class="box hide" style="position:fixed"></div>
+<div id="set" class="box hide" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;max-width:92%;padding:16px;z-index:30"><b style="font-size:15px">Settings</b>
+<label>Theme (menus; space stays dark)</label><div class="row"><button data-th="dark">Dark</button><button data-th="light">Light</button></div>
+<label>Graphics quality</label><div class="row"><button data-q="0">Low</button><button data-q="1">Medium</button><button data-q="2">High</button></div>
+<label>Language</label><div class="row"><button data-lang="en">English</button><button data-lang="fr">Français</button></div>
+<label>Sound</label><div class="row"><button id="sfxb">Effects</button><button id="ambb">Ambient</button></div>
+<label>Volume</label><input type="range" id="vol" min="0" max="1" step=".05">
+<button id="setx" style="width:100%;margin-top:12px">Close</button></div>
+<div id="bar" class="box">
+<button id="bmenu">Menu</button><button id="pause">Pause</button><input type="range" id="spd" min="-1" max="1" step=".05" value="0" style="width:90px" aria-label="Simulation speed"><span id="spdv">×1.0</span>
+<button id="tr" class="on">Trails</button><button id="lb" class="on">Names</button><button id="home">Reset view</button><button id="fol">Follow: off</button><button id="undo">Undo</button><button id="rw">Rewind</button><input type="range" id="rws" class="hide" min="0" max="1" value="0" style="width:120px" aria-label="Rewind"><span id="rwl" class="hide"></span><button id="demo">Demo system</button><button id="clear">Clear all</button><span id="cn"></span>
+</div>
+<script>
+const $=i=>document.getElementById(i),cv=$('c'),ctx=cv.getContext('2d'),G=1,TAU=Math.PI*2;
+const DEF={star:{m:20000,r:22,c:'#ffd27a',n:'Star'},planet:{m:20,r:6,c:'#5aa9ff',n:'Planet'},asteroid:{m:.01,r:1.6,c:'#a39b8f',n:'Asteroid'},bh:{m:60000,r:0,c:'#000000',n:'Black hole'}};
+const P=JSON.parse(JSON.stringify(DEF));for(const k in P)P[k].name='';
+const lum=b=>Math.pow(b.m/20000,3.5),
+fD=u=>fx.real?(u<2?(u/200*149.6).toPrecision(3)+' M km':(u/200).toPrecision(3)+' '+tr('AU')):fmt(u)+' u',
+fV=v=>fx.real?(v*2.98).toPrecision(3)+' km/s':fmt(v)+' u/s',
+fT=t=>fx.real?(t>125.66?(t/125.66).toPrecision(3)+' '+tr('yr'):(t*2.906).toPrecision(3)+' '+tr('days')):fmt(t)+' s',
+fM=m=>fx.real?(m>=3000?(m/20000).toPrecision(3)+' M☉':(m*16.65).toPrecision(3)+' M⊕'):fmt(m);
+const bhR=m=>Math.max(4,m*2.5e-4),fmt=n=>n>=100?n.toFixed(0):n>=1?n.toFixed(2):n.toPrecision(2),esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let W,H,dpr=1,cam={x:0,y:0,z:1},bodies=[],S=[],cnt={},uid=1,tool='star',mode='point',dir=1,sf=1,paused=false,speed=1,showTr=true,showLb=true,mouse={x:0,y:0},parent=null,sel=null,pan=null,tAcc=0,aim=null,drag=null,velEdit=false,lastSel=null,dsx=0,dsy=0,fx={roche:1,hz:0,lag:0,real:0,lens:1},set={theme:'dark',q:1,sfx:1,amb:0,vol:.5,lang:(navigator.language||'en').slice(0,2)==='fr'?'fr':'en'},stats={broken:0,fed:0},gmode=0,tapOrb=null,ptrs=new Map(),pinch=null,tab='d',done={},inMenu=true,pmOpen=false,follow=null,hist=[],undoSt=[],rw=false;
+const bg=Array.from({length:240},()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.3+.3,d:Math.random()*2+.2}));
+function resize(){dpr=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr}
+addEventListener('resize',resize);resize();
+const w2s=(x,y)=>[(x-cam.x)*cam.z+W/2,(y-cam.y)*cam.z+H/2],s2w=(x,y)=>[(x-W/2)/cam.z+cam.x,(y-H/2)/cam.z+cam.y];
+const refresh=()=>{S=bodies.filter(b=>b.t!=='asteroid')};
+function mk(t,name,m,r,c,x,y,vx,vy){cnt[t]=(cnt[t]||0)+1;const b={id:uid++,t,name:name||tr(DEF[t].n)+' '+cnt[t],m,r:t==='bh'?bhR(m):r,c,x,y,vx,vy,ax:0,ay:0,tr:[],age:0,h:[]};bodies.push(b);refresh();return b}
+function orbitVel(p,x,y,m,d=dir,f=sf){const rx=x-p.x,ry=y-p.y,r=Math.hypot(rx,ry)||1e-6,v=Math.sqrt(G*(p.m+m)/r)*f;return[p.vx+d*ry/r*v,p.vy-d*rx/r*v]}
+function place(wx,wy,ux=0,uy=0){pushUndo();const p=P[tool],n=tool==='asteroid'?Math.max(1,Math.min(300,+$('cnt').value||1)):1;
+ for(let i=0;i<n;i++){let x=wx,y=wy,a=Math.random()*TAU;
+  if(n>1){if(mode==='orbit'&&parent){const R=Math.hypot(wx-parent.x,wy-parent.y)*(1+(Math.random()-.5)*.12);x=parent.x+Math.cos(a)*R;y=parent.y+Math.sin(a)*R}else{const R=Math.random()*25/cam.z;x+=Math.cos(a)*R;y+=Math.sin(a)*R}}
+  const v=mode==='orbit'&&parent?orbitVel(parent,x,y,p.m):[ux,uy];
+  mk(tool,p.name&&n>1?p.name+' '+(i+1):p.name,p.m,p.r,p.c,x,y,v[0],v[1]).mine=1}sfxPlace(tool)}
+function accel(){for(const b of bodies){let ax=0,ay=0;for(const s of S){if(s===b)continue;const dx=s.x-b.x,dy=s.y-b.y,d2=dx*dx+dy*dy+4,k=G*s.m/(d2*Math.sqrt(d2));ax+=dx*k;ay+=dy*k}b.ax=ax;b.ay=ay}}
+function merge(a,o){const M=a.m+o.m;a.x=(a.x*a.m+o.x*o.m)/M;a.y=(a.y*a.m+o.y*o.m)/M;a.vx=(a.vx*a.m+o.vx*o.m)/M;a.vy=(a.vy*a.m+o.vy*o.m)/M;a.r=a.t==='bh'?bhR(M):Math.cbrt(a.r**3+o.r**3);a.m=M;o.dead=1;if(a.t==='bh'&&o.t==='planet')stats.fed++;sfxMerge(a,o);if(sel===o)sel=a;if(parent===o)parent=null}
+function collide(){let hit=false;for(const s of S){if(s.dead)continue;for(const b of bodies){if(b===s||b.dead||(b.t!=='asteroid'&&b.id<s.id))continue;const dx=b.x-s.x,dy=b.y-s.y,R=s.r+b.r;if(dx*dx+dy*dy<R*R){let a=s,o=b;if(b.t!=='asteroid'&&b.m>s.m){a=b;o=s}merge(a,o);hit=true;if(o===s)break}}}
+ if(hit){bodies=bodies.filter(b=>!b.dead);refresh()}return hit}
+function tidal(){let hit=false;for(const b of bodies){if(b.t!=='planet'||b.held||b.dead||b.safe)continue;for(const s of S){if(s===b||s.dead||s.m<b.m*8)continue;const dx=b.x-s.x,dy=b.y-s.y,lim=.7*b.r*Math.cbrt(s.m/b.m);if(dx*dx+dy*dy<lim*lim){shatter(b,s);hit=true;break}}}
+ if(hit){bodies=bodies.filter(b=>!b.dead);refresh()}return hit}
+function shatter(b,s){b.dead=1;if(sel===b)sel=null;if(parent===b)parent=null;const n=28,sp=Math.sqrt(G*b.m/b.r);
+ for(let i=0;i<n;i++){const a=Math.random()*TAU,d=Math.random()*b.r;mk('asteroid',b.name+' '+tr('debris'),b.m/n,Math.max(.8,b.r/Math.cbrt(n)),b.c,b.x+Math.cos(a)*d,b.y+Math.sin(a)*d,b.vx+(Math.random()-.5)*sp,b.vy+(Math.random()-.5)*sp)}
+ stats.broken++;sfxBreak();toast(tr('{0} was torn apart by {1}',b.name,s.name))}
+function climN(b){let F=0,hz=false;for(const s of bodies){if(s.t!=='star')continue;const d=Math.hypot(s.x-b.x,s.y-b.y)/200,L=lum(s);F+=L/(d*d);if(d>.95*Math.sqrt(L)&&d<1.67*Math.sqrt(L))hz=true}
+ return F<1e-4?null:{T:278*Math.pow(F*.7,.25)-273.15,hz}}
+function climate(b){const c=climN(b);return c?'<br>'+tr(c.hz?'About {0} °C · in the habitable zone':'About {0} °C · outside the habitable zone',Math.round(c.T)):'<br>'+tr('No star is heating it')}
+function sim(dt){const n=Math.min(Math.ceil(dt/.01),300),h=dt/n;accel();
+ for(let k=0;k<n;k++){for(const b of bodies){if(b.held)continue;b.vx+=b.ax*h/2;b.vy+=b.ay*h/2;b.x+=b.vx*h;b.y+=b.vy*h}accel();for(const b of bodies){if(b.held)continue;b.vx+=b.ax*h/2;b.vy+=b.ay*h/2}const th=fx.roche&&tidal();if(collide()||th)accel()}
+ tAcc+=dt;for(const b of bodies)b.age+=dt;if(tAcc>.25){tAcc=0;hist.push(snapNow());if(hist.length>240)hist.shift();for(const b of bodies){b.tr.push(b.x,b.y);if(b.t!=='asteroid'||b===sel)sample(b);if(b.tr.length>(b.t==='asteroid'?240:1400))b.tr.splice(0,2)}}}
+function trace(p,x,y,u,v,mu){const r0=Math.hypot(x,y);if(r0<1e-3)return null;const sp=Math.hypot(u,v),a=1/(2/r0-sp*sp/mu),per=a>0?TAU*Math.sqrt(a**3/mu):null,h=.004*Math.sqrt(r0**3/mu),pts=[w2s(p.x+x,p.y+y)];let ang=0;
+ const k=sp*sp-mu/r0,d=x*u+y*v,ecc=Math.hypot((k*x-d*u)/mu,(k*y-d*v)/mu);
+ for(let i=0;i<5000;i++){let r3=Math.hypot(x,y)**3;u-=mu*x/r3*h/2;v-=mu*y/r3*h/2;const ox=x,oy=y;x+=u*h;y+=v*h;r3=Math.hypot(x,y)**3;u-=mu*x/r3*h/2;v-=mu*y/r3*h/2;
+  ang+=Math.abs(Math.atan2(ox*y-oy*x,ox*x+oy*y));const r=Math.hypot(x,y);if(i%6===0)pts.push(w2s(p.x+x,p.y+y));if(ang>6.3||r<p.r||r>r0*30)break}
+ return{pts,per,sp,ecc}}
+function predict(px,py,m){const p=parent,[vx,vy]=orbitVel(p,px,py,m);return trace(p,px-p.x,py-p.y,vx-p.vx,vy-p.vy,G*(p.m+m))}
+function primaryOf(b){let best=null,bk=0;for(const s of S){if(s===b||s.m<=b.m)continue;const dx=s.x-b.x,dy=s.y-b.y,k=s.m/(dx*dx+dy*dy+1);if(k>bk){bk=k;best=s}}return best}
+function actual(b){const p=primaryOf(b);if(!p)return null;const o=trace(p,b.x-p.x,b.y-p.y,b.vx-p.vx,b.vy-p.vy,G*(p.m+b.m));return o&&{p,...o}}
+function dotted(pts,col){ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.setLineDash([.1,7]);ctx.beginPath();pts.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke();ctx.setLineDash([]);ctx.lineCap='butt'}
+function drawBody(b){const[x,y]=w2s(b.x,b.y),r=Math.max(b.r*cam.z,b.t==='asteroid'?1.1:2);if(x<-300||y<-300||x>W+300||y>H+300)return;let g;
+ if(b.t==='star'){g=ctx.createRadialGradient(x,y,r*.5,x,y,r*3.2);g.addColorStop(0,b.c+'99');g.addColorStop(1,b.c+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*3.2,0,TAU);ctx.fill();
+  if(set.q>=2)flare(x,y,r,b);g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'#fff');g.addColorStop(.55,b.c);g.addColorStop(1,b.c);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill()}
+ else if(b.t==='planet'){const L=lightOf(b),lx=L?L[0]:-.7,ly=L?L[1]:-.7;g=ctx.createRadialGradient(x+lx*r*.45,y+ly*r*.45,r*.1,x,y,r*1.05);g.addColorStop(0,'#ffffffaa');g.addColorStop(.3,b.c);g.addColorStop(.9,'#000000e0');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
+  if(set.q>=1&&r>5){ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.clip();for(let i=0;i<6;i++){const k=Math.sin(b.id*12.9898+i*78.233)*43758.5453,f=k-Math.floor(k);ctx.fillStyle=i%2?'rgba(255,255,255,.07)':'rgba(0,0,0,.1)';ctx.fillRect(x-r,y-r+(i+f*.6)*r/3,2*r,r*(.12+f*.2))}ctx.restore();ctx.strokeStyle=b.c+'66';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,r+.8,0,TAU);ctx.stroke()}}
+ else if(b.t==='bh')bhDraw(x,y,r);
+ else{ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill()}
+ if(b===sel||b===parent){ctx.strokeStyle=b===parent?'#7fe3c9':'#fff';ctx.lineWidth=1.5;ctx.setLineDash(b===parent?[]:[4,4]);ctx.beginPath();ctx.arc(x,y,r+7,0,TAU);ctx.stroke();ctx.setLineDash([])}
+ if(showLb&&(b.t!=='asteroid'||b===sel)){ctx.fillStyle='#c5cfee';ctx.font="12px Sora,sans-serif";ctx.fillText(b.name,x+r+8,y+4)}}
+function bhDraw(x,y,r){const t=performance.now()/1000,tl=-.35,c=Math.cos(tl),sn=Math.sin(tl);
+ const g=ctx.createRadialGradient(x,y,r,x,y,r*3);g.addColorStop(0,'#ffb347aa');g.addColorStop(.3,'#ff6a0033');g.addColorStop(1,'#ff6a0000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*3,0,TAU);ctx.fill();
+ ctx.lineCap='round';for(const sg of[1,-1]){const ex=x-sg*sn*r*7,ey=y+sg*c*r*7,jg=ctx.createLinearGradient(x,y,ex,ey);jg.addColorStop(0,'#cfe9ffcc');jg.addColorStop(1,'#cfe9ff00');ctx.strokeStyle=jg;ctx.lineWidth=Math.max(1.5,r*.22);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.stroke()}ctx.lineCap='butt';
+ const dots=far=>{for(const k of[1.5,2.1,2.8]){const w=3/Math.pow(k,1.5);for(let i=0;i<14;i++){const a=t*w+i*TAU/14,sa=Math.sin(a);if((sa<0)!==far)continue;const ex=Math.cos(a)*k*r,ey=sa*k*r*.28;
+  ctx.fillStyle=`rgba(255,${(170+k*25)|0},110,${.55+.4*Math.cos(a)})`;ctx.beginPath();ctx.arc(x+ex*c-ey*sn,y+ex*sn+ey*c,Math.max(.8,r*.07),0,TAU);ctx.fill()}}};
+ dots(true);ctx.fillStyle='#000';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();ctx.strokeStyle='#ffe2b0';ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(x,y,r*1.04,0,TAU);ctx.stroke();dots(false)}
+function pick(sx,sy){let best=null,bd=1e9;for(const b of bodies){const[x,y]=w2s(b.x,b.y),d=Math.hypot(x-sx,y-sy);if(d<Math.max(b.r*cam.z,3)+8&&d<bd){bd=d;best=b}}return best}
+function draw(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#070b17';ctx.fillRect(0,0,W,H);if(set.q>=1){ctx.globalAlpha=.55;ctx.drawImage(neb,Math.max(-W*.1,Math.min(W*.1,-cam.x*.02*cam.z))-W*.1,Math.max(-H*.1,Math.min(H*.1,-cam.y*.02*cam.z))-H*.1,W*1.2,H*1.2);ctx.globalAlpha=1}
+ const bhs=fx.lens?bodies.filter(b=>b.t==='bh').map(b=>{const[x,y]=w2s(b.x,b.y);return[x,y,b.r*cam.z]}):[];
+ for(const s of bg){let X=(((s.x*W-cam.x*.05*s.d*cam.z)%W)+W)%W,Y=(((s.y*H-cam.y*.05*s.d*cam.z)%H)+H)%H;
+  for(const[bx,by,br] of bhs){const dx=X-bx,dy=Y-by,d=Math.hypot(dx,dy),E=br*3;if(d<E*12&&d>.01){const d2=d/2+Math.sqrt(d*d/4+E*E);if(d2<br)X=-1e4;else{X=bx+dx/d*d2;Y=by+dy/d*d2}}}
+  ctx.fillStyle=`rgba(210,225,255,${.15+s.s*.3})`;ctx.fillRect(X,Y,s.s,s.s)}
+ if(showTr)for(const b of bodies){if(b.t==='bh'||b.tr.length<4)continue;ctx.strokeStyle=b.c+'66';ctx.lineWidth=b.t==='asteroid'?.8:1.2;ctx.beginPath();let[x,y]=w2s(b.tr[0],b.tr[1]);ctx.moveTo(x,y);for(let i=2;i<b.tr.length;i+=2){[x,y]=w2s(b.tr[i],b.tr[i+1]);ctx.lineTo(x,y)}[x,y]=w2s(b.x,b.y);ctx.lineTo(x,y);ctx.stroke()}
+ if(fx.hz)for(const b of bodies){if(b.t!=='star')continue;const q=Math.sqrt(lum(b)),[x,y]=w2s(b.x,b.y),o=334*q*cam.z,i=190*q*cam.z;ctx.fillStyle='rgba(90,220,150,.09)';ctx.strokeStyle='rgba(90,220,150,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,o,0,TAU);ctx.arc(x,y,i,0,TAU,true);ctx.fill('evenodd');ctx.stroke();
+  ctx.beginPath();ctx.arc(x,y,i,0,TAU);ctx.stroke();ctx.fillStyle='rgba(140,240,190,.8)';ctx.font="12px Sora,sans-serif";ctx.textAlign='center';ctx.fillText(tr('habitable zone'),x,y-o-5);ctx.textAlign='left'}
+ let ao=null;if(sel&&bodies.includes(sel)){ao=actual(sel);if(ao)dotted(ao.pts,'#ffffffdd')}
+ for(const b of bodies)drawBody(b);
+ if(fx.lag&&ao){const p=ao.p,dx=sel.x-p.x,dy=sel.y-p.y,R=Math.hypot(dx,dy),ux=dx/R,uy=dy/R,rH=R*Math.cbrt(sel.m/(3*p.m)),k3=R*(1+5*sel.m/(12*p.m)),sg=dx*(sel.vy-p.vy)-dy*(sel.vx-p.vx)>0?1:-1,
+  rot=a=>[p.x+R*(ux*Math.cos(a)-uy*Math.sin(a)),p.y+R*(ux*Math.sin(a)+uy*Math.cos(a))];
+  const L=[['L1',sel.x-ux*rH,sel.y-uy*rH],['L2',sel.x+ux*rH,sel.y+uy*rH],['L3',p.x-ux*k3,p.y-uy*k3],['L4',...rot(sg*Math.PI/3)],['L5',...rot(-sg*Math.PI/3)]];
+  ctx.font="12px Sora,sans-serif";for(const[n,wx,wy] of L){const[x,y]=w2s(wx,wy);ctx.strokeStyle='#ffd27a';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y-6);ctx.lineTo(x+6,y);ctx.lineTo(x,y+6);ctx.lineTo(x-6,y);ctx.closePath();ctx.stroke();ctx.fillStyle='#ffd27a';ctx.fillText(n,x+9,y+4)}}
+ if(tool!=='select'){const p=P[tool],ok=mode==='point'||parent;
+  if(mode==='orbit'&&!parent){const h=pick(mouse.x,mouse.y);if(h){const[x,y]=w2s(h.x,h.y);ctx.strokeStyle='#7fe3c9';ctx.lineWidth=1.5;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(x,y,Math.max(h.r*cam.z,3)+7,0,TAU);ctx.stroke();ctx.setLineDash([])}}
+  if(ok){const rr=tool==='bh'?bhR(p.m):p.r,R=Math.max(rr*cam.z,2),[gx,gy]=aim&&!aim.vel?w2s(aim.x,aim.y):[mouse.x,mouse.y];ctx.globalAlpha=.6;if(tool==='bh')bhDraw(gx,gy,R);else{ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(gx,gy,R,0,TAU);ctx.fill()}ctx.globalAlpha=1}
+  if(mode==='orbit'&&parent){const[px,py]=w2s(parent.x,parent.y),[wx,wy]=s2w(mouse.x,mouse.y),d=Math.hypot(wx-parent.x,wy-parent.y);
+   ctx.strokeStyle='#7fe3c9aa';ctx.lineWidth=1;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(mouse.x,mouse.y);ctx.stroke();
+   const o=predict(wx,wy,p.m);let t=tr('distance')+' '+fD(d);
+   if(o){dotted(o.pts,'#7fe3c9');t+='  ·  '+tr('speed')+' '+fV(o.sp)+(o.per?'  ·  '+tr('period')+' '+fT(o.per):'  ·  '+tr('escapes'))}
+   ctx.font="12px Sora,sans-serif";const tw=ctx.measureText(t).width+14,mx=(px+mouse.x)/2,my=(py+mouse.y)/2-12;ctx.fillStyle='#0b1226ee';ctx.fillRect(mx-tw/2,my-13,tw,20);ctx.fillStyle='#e6ecff';ctx.textAlign='center';ctx.fillText(t,mx,my+2);ctx.textAlign='left'}}
+ if(aim){const[ax,ay]=w2s(aim.x,aim.y),[wx,wy]=s2w(mouse.x,mouse.y),vx=(wx-aim.x)*.5,vy=(wy-aim.y)*.5,sp=Math.hypot(vx,vy);
+  if(sp>.3){const o=actual({m:aim.vel?sel.m:P[tool].m,x:aim.x,y:aim.y,vx,vy});if(o)dotted(o.pts,'#ffd27a');
+   ctx.strokeStyle=ctx.fillStyle='#ffd27a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(mouse.x,mouse.y);ctx.stroke();
+   const an=Math.atan2(mouse.y-ay,mouse.x-ax);ctx.beginPath();ctx.moveTo(mouse.x,mouse.y);ctx.lineTo(mouse.x-10*Math.cos(an-.4),mouse.y-10*Math.sin(an-.4));ctx.lineTo(mouse.x-10*Math.cos(an+.4),mouse.y-10*Math.sin(an+.4));ctx.fill();
+   ctx.font="12px Sora,sans-serif";ctx.fillText(tr('speed')+' '+fV(sp),mouse.x+12,mouse.y-8)}}
+ const nm=P[tool]&&P[tool].n,hint=tool==='select'?(velEdit?tr('Drag anywhere to set the velocity of the selected object'):tr('Click an object to see its orbit · drag it to move it')):mode==='point'?tr('Click to place {0} at rest, or drag to launch it',set.lang==='fr'?FRA[tool]:'a '+nm.toLowerCase()):!parent?tr('Click the object it should orbit'):tr('Move and click to place · Esc to pick another object');
+ if($('hint').textContent!==hint)$('hint').textContent=hint;$('cn').textContent=bodies.length+' '+tr('objects');
+ if(sel&&!bodies.includes(sel))sel=null;
+ if(sel!==lastSel){lastSel=sel;velEdit=false;if(sel){$('sname').value=sel.name;$('smass').value=sel.m;$('srd').value=sel.r;$('sc').value=sel.c}
+  $('srad').classList.toggle('hide',!sel||sel.t==='bh');$('scol').classList.toggle('hide',!sel||sel.t==='bh');ui()}
+ $('selinfo').innerHTML=sel?`<b>${esc(sel.name)}</b> (${tr(sel.t==='bh'?'black hole':sel.t)})<br>${tr('mass')} ${fM(sel.m)}<br>${tr('size')} ${fmt(sel.r)}<br>${tr('speed')} ${fV(Math.hypot(sel.vx,sel.vy))}`+(sel.t==='planet'?climate(sel):'')+(ao?`<br>${tr('orbits')} ${esc(ao.p.name)}<br>${tr('period')} ${ao.per?fT(ao.per):tr('none (not bound)')}<br>${tr('eccentricity')} ${ao.ecc.toFixed(2)}`:'<br>'+tr('Not orbiting anything')):tr('Nothing selected.');$('del').disabled=!sel}
+let last=performance.now(),chT=0;
+function loop(t){const fd=Math.min((t-last)/1000,.05);last=t;if(!paused&&!pmOpen)sim(fd*speed);{const ft=folTarget();if(ft){cam.x+=(ft[0]-cam.x)*.2;cam.y+=(ft[1]-cam.y)*.2}}draw();if(sel)drawGraph();if(++chT%30===0&&!paused&&!inMenu)chk();requestAnimationFrame(loop)}
+/* input */
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);mouse={x:e.offsetX,y:e.offsetY};audioInit();hideTip();ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+ if(ptrs.size===2){aim=null;tapOrb=null;pan=null;if(drag){drag.held=0;drag.moving=0;drag=null}const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),x:(a.x+b.x)/2,y:(a.y+b.y)/2};return}
+ if(ptrs.size>2)return;
+ if(e.button!==0){pan={x:e.clientX,y:e.clientY};return}
+ const hit=pick(e.offsetX,e.offsetY);
+ if(tool==='select'){
+  if(velEdit&&sel){aim={x:sel.x,y:sel.y,vel:1};return}
+  sel=hit;if(hit){hit.held=1;drag=hit;dsx=e.offsetX;dsy=e.offsetY}else pan={x:e.clientX,y:e.clientY}}
+ else if(mode==='orbit'&&!parent){if(hit)parent=hit}
+ else if(mode==='point'){const[x,y]=s2w(e.offsetX,e.offsetY);aim={x,y,sx:e.offsetX,sy:e.offsetY}}
+ else tapOrb=1});
+cv.addEventListener('pointermove',e=>{mouse={x:e.offsetX,y:e.offsetY};
+ if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+ if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;if(follow){follow=null;folLabel()}cam.x-=(cx-pinch.x)/cam.z;cam.y-=(cy-pinch.y)/cam.z;zoomAt(cx,cy,d/pinch.d);pinch={d,x:cx,y:cy};return}
+ tipCanvas(e);
+ if(pan){if(follow){follow=null;folLabel()}cam.x-=(e.clientX-pan.x)/cam.z;cam.y-=(e.clientY-pan.y)/cam.z;pan={x:e.clientX,y:e.clientY}}
+ if(drag&&(drag.moving||Math.hypot(e.offsetX-dsx,e.offsetY-dsy)>3)){if(!drag.moving)pushUndo();drag.moving=1;[drag.x,drag.y]=s2w(e.offsetX,e.offsetY);drag.vx=drag.vy=0;drag.tr=[]}});
+function up(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(tapOrb&&!pinch){mouse={x:e.offsetX,y:e.offsetY};const[x,y]=s2w(mouse.x,mouse.y);place(x,y)}tapOrb=null;pan=null;if(drag){drag.held=0;drag.moving=0;drag=null}
+ if(aim){mouse={x:e.offsetX,y:e.offsetY};const[wx,wy]=s2w(mouse.x,mouse.y);let vx=(wx-aim.x)*.5,vy=(wy-aim.y)*.5;
+  if(aim.vel){if(sel){pushUndo();sel.vx=vx;sel.vy=vy}velEdit=false;ui()}
+  else{if(Math.hypot(mouse.x-aim.sx,mouse.y-aim.sy)<5)vx=vy=0;place(aim.x,aim.y,vx,vy)}
+  aim=null}}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault();const b=s2w(e.offsetX,e.offsetY);cam.z=Math.min(8,Math.max(.05,cam.z*Math.exp(-e.deltaY*.0012)));const a=s2w(e.offsetX,e.offsetY);cam.x+=b[0]-a[0];cam.y+=b[1]-a[1]},{passive:false});
+addEventListener('keydown',e=>{const hid=i=>$(i).classList.contains('hide');
+ if(e.key==='Escape'){e.preventDefault();
+  if(e.target.tagName==='INPUT'){e.target.blur();return}
+  if(!hid('set'))$('set').classList.add('hide');
+  else if(!hid('dict'))$('dict').classList.add('hide');
+  else if(inMenu){if(!hid('mhistv')){$('mhistv').classList.add('hide');$('mmain').classList.remove('hide')}}
+  else if(pmOpen)closePM();
+  else if(parent||aim||velEdit||tapOrb){parent=null;aim=null;tapOrb=null;velEdit=false;ui();hideTip()}
+  else openPM();
+  return}
+ if(inMenu||pmOpen||e.target.tagName==='INPUT')return;if((e.ctrlKey||e.metaKey)&&(e.key||'').toLowerCase()==='z'){e.preventDefault();undo();return}
+ if(e.key===' '){e.preventDefault();$('pause').click()}else if(e.key==='Delete'&&sel)$('del').click()});
+/* ui */
+function loadForm(){if(tool==='select')return;const p=P[tool];$('name').value=p.name;$('mass').value=p.m;$('rad').value=p.r;$('radv').textContent=p.r;$('col').value=p.c}
+function ui(){const s=tool==='select';$('opts').classList.toggle('hide',s);$('selbox').classList.toggle('hide',!s);$('orbopts').classList.toggle('hide',mode!=='orbit');
+ $('radrow').classList.toggle('hide',tool==='bh');$('colrow').classList.toggle('hide',tool==='bh');$('cntrow').classList.toggle('hide',tool!=='asteroid');
+ document.querySelectorAll('#types button').forEach(b=>b.classList.toggle('on',b.dataset.t===tool));document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));
+ $('ccw').classList.toggle('on',dir===1);$('cw').classList.toggle('on',dir===-1);$('svel').classList.toggle('on',velEdit)}
+document.querySelectorAll('#types button').forEach(b=>b.onclick=()=>{tool=b.dataset.t;parent=null;sel=null;velEdit=false;aim=null;loadForm();ui()});
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;parent=null;ui()});
+$('ccw').onclick=()=>{dir=1;ui()};$('cw').onclick=()=>{dir=-1;ui()};
+$('sf').oninput=e=>{sf=+e.target.value;$('sfv').textContent=sf.toFixed(2)};
+$('name').oninput=e=>P[tool].name=e.target.value;
+$('mass').oninput=e=>P[tool].m=Math.max(1e-6,+e.target.value||1e-6);
+$('rad').oninput=e=>{P[tool].r=+e.target.value;$('radv').textContent=e.target.value};
+$('col').oninput=e=>P[tool].c=e.target.value;
+$('pause').onclick=()=>{if(rw){endRW();return}paused=!paused;$('pause').textContent=tr(paused?'Resume':'Pause')};
+$('spd').oninput=e=>{speed=10**+e.target.value;$('spdv').textContent='×'+speed.toFixed(1)};
+$('tr').onclick=()=>{showTr=!showTr;$('tr').classList.toggle('on',showTr)};
+$('lb').onclick=()=>{showLb=!showLb;$('lb').classList.toggle('on',showLb)};
+$('home').onclick=()=>{cam={x:0,y:0,z:1};follow=null;folLabel()};
+$('clear').onclick=()=>{pushUndo();bodies=[];refresh();cnt={};sel=parent=null};
+$('del').onclick=()=>{if(sel){pushUndo();bodies=bodies.filter(b=>b!==sel);refresh();sel=null}};
+function demo(){clearRW();hist=[];follow=null;folLabel();bodies=[];cnt={};sel=parent=null;cam={x:0,y:0,z:.9};const sun=mk('star','Sun',20000,22,'#ffd27a',0,0,0,0);
+ const add=(t,n,m,r,c,p,d,a)=>{const x=p.x+Math.cos(a)*d,y=p.y+Math.sin(a)*d,v=orbitVel(p,x,y,m,1,1);return mk(t,n,m,r,c,x,y,v[0],v[1])};
+ add('planet','Cinder',8,4,'#c98b5a',sun,110,0);const t=add('planet','Terra',40,5,'#4f9dff',sun,200,2);add('planet','Luna',.4,1.5,'#d0d0d0',t,8,0);
+ add('planet','Gasgiant',200,12,'#e6b87a',sun,360,4);for(let i=0;i<90;i++)add('asteroid','',.01,1.4,'#a39b8f',sun,265+Math.random()*30,Math.random()*TAU)}
+$('demo').onclick=()=>{pushUndo();demo()};
+const DICT=[
+["star","Star","A huge, hot ball of gas that makes its own light. In Orbitm stars are usually the heavy centres that planets orbit. Stars that touch merge into one heavier star."],
+["planet","Planet","A round body that orbits a star. Planets pull on other objects, so a heavy planet can keep moons. When planets collide they merge, and the new size keeps the total volume."],
+["asteroid","Asteroid","A small rocky leftover. In Orbitm asteroids feel the pull of every star, planet and black hole but do not pull back, because their mass is too small to matter. They are absorbed by whatever they hit."],
+["bh","Black hole","Mass packed so tightly that nothing, not even light, escapes from inside its event horizon. From far away it pulls like any other object of the same mass. In Orbitm it swallows whatever touches it."],
+["horizon","Event horizon","The boundary around a black hole beyond which nothing can return. The real radius is 2GM/c². Orbitm draws a simplified size that grows with mass (mass × 0.00025, at least 4), so it is for gameplay, not to scale."],
+["accretion","Accretion disk","Glowing gas spiralling into a black hole, heated by friction. In Orbitm the orange glow and ring are decoration only and do not change the physics."],
+["mass","Mass","How much matter an object has. More mass means a stronger pull on other objects. Mass has no unit in Orbitm, the numbers only compare objects to each other."],
+["gravity","Gravity","Every object with mass attracts every other one. Newton's law says the pull is G × m1 × m2 / distance². Double the distance and the pull drops to a quarter. Orbitm computes this between every pair of objects at each step."],
+["g","Gravitational constant (G)","The number that sets how strong gravity is. Orbitm uses G = 1 to keep numbers simple. In real SI units it is about 6.67 × 10⁻¹¹."],
+["orbit","Orbit","Falling around something instead of into it. An orbiting object moves sideways fast enough that it keeps missing the thing it falls toward."],
+["circular","Circular orbit","An orbit at constant distance. The needed speed is √(G × M / r), where M is the mass being orbited and r the distance. Orbit placement with speed ×1.00 gives this."],
+["elliptical","Elliptical orbit","An oval orbit. Starting slower than circular makes the object fall closer and speed up near the centre. Starting faster makes it swing further out. The body being orbited sits at one focus of the oval, not in the middle."],
+["eccentricity","Eccentricity","How stretched an orbit is. 0 is a circle, between 0 and 1 is an ellipse, 1 is a parabola, and above 1 is a hyperbola (the object never comes back). Shown in the Inspect panel."],
+["period","Orbital period","The time for one full orbit, in simulation seconds. Bigger orbits take longer: the square of the period grows with the cube of the orbit size (Kepler's third law)."],
+["speed","Speed","How fast an object moves, in units per second (u/s). On an orbit it is fastest at the closest point and slowest at the farthest."],
+["escape","Escape velocity","The speed needed to leave for good, about 1.41 (√2) times the circular speed. The orbit speed slider goes up to 1.5, so you can try it."],
+["point","Point placement","The object starts at rest, so it falls toward the nearest mass. Drag before releasing to launch it with a velocity instead."],
+["orbitplace","Orbit placement","You pick the object to orbit, then place the new one. Orbitm gives it the speed for an orbit around that object, plus that object's own velocity, so moons follow their planet. The dotted preview ignores pulls from other bodies."],
+["launch","Launch velocity","When you drag in point placement, the gold arrow shows direction and speed. Every 2 units of drag equal 1 u/s. The gold dotted line is the path around the body pulling hardest. You can do the same to a placed object with Set velocity."],
+["dotted","Dotted lines","Green: preview of the orbit you are placing. White: current orbit of the selected object, recomputed every frame. Gold: launch path. They assume only the strongest-pulling body acts, so the real path can drift."],
+["primary","Primary body","The heavier body an object mainly orbits. Orbitm picks the heavier body that pulls hardest on the selected object. The biggest object in a system has no primary."],
+["momentum","Momentum","Mass × velocity. When objects merge, total momentum is conserved: the new object moves at the mass-weighted average velocity. A heavy planet barely notices a small asteroid hitting it."],
+["merge","Collisions and merging","Objects that touch merge. The heavier star, planet or black hole keeps its identity, and asteroids are always absorbed. Mass adds up, momentum is conserved, and size grows so that volume adds up. Real impacts make debris and heat, which Orbitm leaves out."],
+["barycenter","Barycenter","The centre of mass of a group of bodies. They orbit it rather than each other's centres. A heavy planet makes its star wobble slightly, and Orbitm shows this because every body pulls on every other."],
+["hill","Hill sphere","The region around a planet where its gravity wins over the star's. Moons must stay inside, and in practice within about half of it, to remain stable. Radius ≈ distance to star × (planet mass / 3 × star mass)^(1/3)."],
+["softening","Softening","A small number added to the squared distance in the gravity formula so that two objects passing very close do not get an infinite kick. Orbitm adds 4 to distance²."],
+["integration","Leapfrog integration","The simulation advances in tiny steps (at most 0.01 s) and updates speed and position alternately. This keeps orbits stable for a long time, where simpler methods slowly drift outward."],
+["trail","Trails","Faint lines showing where an object has been, with one point every 0.25 s of simulated time. Turn them off with the Trails button."],
+["roche","Roche limit and tidal breakup","Come too close to a heavy body and the difference in its pull across an object can tear it apart. In Orbitm a planet that crosses the limit (0.7 × its size × the cube root of the mass ratio, a simplified formula) breaks into 28 asteroids that keep its momentum. The fragments do not pull on others. Toggle: Tidal breakup."],
+["habitable","Habitable zone","The band around a star where a planet could hold liquid water. Orbitm gives each star a brightness from its mass (mass^3.5, compared with the 20,000 reference star) and shades 0.95 to 1.67 AU × the square root of that. Planet temperatures assume 30% reflectivity and no greenhouse effect."],
+["lagrange","Lagrange points","Five spots near two orbiting bodies where a small object can keep pace with them. L1, L2 and L3 lie on the line through both bodies and are unstable. L4 and L5 sit 60° ahead of and behind the smaller body and can be stable when the larger body is at least about 25 times heavier. Orbitm draws approximate positions for the selected object and its primary."],
+["lensing","Gravitational lensing","A massive object bends passing light, so background stars look pushed outward around a black hole, and ones right behind it vanish. Orbitm uses a simple point-lens formula. It is visual only."],
+["jets","Disk spin and jets","Gas in an accretion disk circles faster closer to the hole, and the side moving toward you looks brighter. Black holes can also fire jets along their spin axis. Orbitm animates the disk and draws two jets for looks only. They push nothing."],
+["follow","Follow camera","The camera can lock onto a selected object, or onto the centre of mass of everything in the system, and glide along with it. Moving the view by hand releases the lock. Following the centre of mass keeps a whole system in view even if it drifts."],
+["rewind","Undo and rewind","Undo (Ctrl+Z) reverses your last edits: placing, deleting, editing and loading. Rewind steps back through the last 60 seconds of simulation. Drag the slider to scrub, then press Play from here to continue from that moment, which discards the later history. Trails are cleared when you jump back."],
+["energy","Orbital energy","Specific orbital energy is v²/2 − μ/r, where μ = G × (both masses). Negative means the orbit is bound, zero is a parabola, and positive means the object will escape. On an undisturbed orbit it stays constant, so changes in the graph show other bodies pulling or a close pass."],
+["units","Units","Normally distance is in u, time in simulation seconds, and mass has no unit. Real units converts with 200 u = 1 AU, 20,000 mass = 1 solar mass and 125.66 s = 1 year, which gives an Earth-like orbit speed of 29.8 km/s. Sizes are exaggerated to stay visible, so only masses, distances, speeds and times are converted."]];
+function renderDict(open){const q=$('dq').value.toLowerCase();$('dl').innerHTML=DICT.map(d=>[d[0],...dloc(d)]).filter(d=>(d[1]+d[2]).toLowerCase().includes(q)).map(d=>`<details${d[0]===open?' open':''} id="d-${d[0]}"><summary>${d[1]}</summary><p>${d[2]}</p></details>`).join('')||`<p style="color:var(--mu)">${tr('No match.')}</p>`}
+function openDict(id){$('dict').classList.remove('hide');setTab('d');$('dq').value='';renderDict(id);const el=$('d-'+id);if(el)el.scrollIntoView({block:'nearest'})}
+$('dq').oninput=()=>renderDict();$('dx').onclick=()=>$('dict').classList.add('hide');$('dictbtn').onclick=()=>openDict();$('sdict').onclick=()=>openDict(sel&&sel.t);
+/* editing the selected object */
+$('sname').oninput=e=>{if(sel)sel.name=e.target.value||sel.name};
+$('smass').oninput=e=>{if(sel){sel.m=Math.max(1e-6,+e.target.value||1e-6);if(sel.t==='bh')sel.r=bhR(sel.m)}};
+$('srd').oninput=e=>{if(sel)sel.r=+e.target.value};
+$('sc').oninput=e=>{if(sel)sel.c=e.target.value};
+$('svel').onclick=()=>{velEdit=!velEdit;ui()};$('sstop').onclick=()=>{if(sel){pushUndo();sel.vx=sel.vy=0}};
+/* save, load, share */
+let tt;function toast(t){const el=$('toast');el.textContent=t;el.classList.remove('hide');clearTimeout(tt);tt=setTimeout(()=>el.classList.add('hide'),2800)}
+const snap=()=>JSON.stringify({v:1,cam:{x:+cam.x.toFixed(2),y:+cam.y.toFixed(2),z:+cam.z.toFixed(3)},b:bodies.map(b=>[b.t,b.name,b.m,+b.r.toFixed(3),b.c,+b.x.toFixed(3),+b.y.toFixed(3),+b.vx.toFixed(4),+b.vy.toFixed(4),b.safe?1:0])});
+const enc=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),dec=s=>decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/'))));
+function restore(txt){try{const d=JSON.parse(txt);if(!Array.isArray(d.b))throw 0;pushUndo();hist=[];follow=null;bodies=[];cnt={};sel=parent=null;
+ for(const a of d.b.slice(0,2000)){if(!DEF[a[0]]||![2,3,5,6,7,8].every(i=>isFinite(+a[i])))continue;mk(a[0],String(a[1]).slice(0,40),Math.max(1e-6,+a[2]),+a[3],/^#[0-9a-f]{6}$/i.test(a[4])?a[4]:DEF[a[0]].c,+a[5],+a[6],+a[7],+a[8]).safe=+a[9]||undefined}
+ refresh();if(d.cam&&isFinite(d.cam.z))cam={x:+d.cam.x||0,y:+d.cam.y||0,z:Math.min(8,Math.max(.05,+d.cam.z))};return true}catch(err){toast(tr('That file could not be read'));return false}}
+$('save').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([snap()],{type:'application/json'}));a.download='orbitm-system.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('load').onclick=()=>$('file').click();
+$('file').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>{if(restore(t)){toast(tr('System loaded'));closePM()}});e.target.value=''};
+$('share').onclick=()=>{const h=enc(snap());if(h.length>60000){toast(tr('Too big for a link. Use Save file instead.'));return}
+ const u=location.href.split('#')[0]+'#s='+h;history.replaceState(null,'','#s='+h);navigator.clipboard.writeText(u).then(()=>toast(tr('Link copied. Anyone with it sees your system.')),()=>toast(tr('Copy the link from the address bar')))};
+/* ===== Alpha 1.3: learning ===== */
+function kep(b){const p=primaryOf(b);if(!p)return null;const x=b.x-p.x,y=b.y-p.y,u=b.vx-p.vx,v=b.vy-p.vy,mu=G*(p.m+b.m),r=Math.hypot(x,y),q=u*u+v*v,a=1/(2/r-q/mu),k=q-mu/r,d=x*u+y*v;
+ return{p,r,sp:Math.sqrt(q),en:q/2-mu/r,per:a>0?TAU*Math.sqrt(a**3/mu):null,ecc:Math.hypot((k*x-d*u)/mu,(k*y-d*v)/mu),out:d>0}}
+function sample(b){const k=kep(b),h=b.h;h.push(k?[k.r,k.sp,k.en]:[NaN,Math.hypot(b.vx,b.vy),NaN]);if(h.length>300)h.shift()}
+function drawGraph(){const c=$('gr'),g=c.getContext('2d'),w=c.width,h=c.height,i=gmode,H=sel.h||[],pts=H.map(r=>r[i]),fin=pts.filter(isFinite),f=[fD,fV,v=>v.toPrecision(3)][i];
+ g.clearRect(0,0,w,h);g.font='20px Sora,sans-serif';g.fillStyle='#8b98bd';
+ if(fin.length<2){g.fillText(tr('Collecting data…'),10,h/2);return}
+ let mn=Math.min(...fin),mx=Math.max(...fin);if(mx-mn<1e-9){mn-=1;mx+=1}
+ g.strokeStyle='#7fe3c9';g.lineWidth=2.5;g.beginPath();let pen=false;pts.forEach((v,k)=>{if(!isFinite(v)){pen=false;return}const x=8+k/Math.max(1,pts.length-1)*(w-16),y=h-30-(v-mn)/(mx-mn)*(h-60);pen?g.lineTo(x,y):g.moveTo(x,y);pen=true});g.stroke();
+ g.fillText(tr('now')+' '+f(fin[fin.length-1]),8,22);g.fillText(f(mn)+' '+tr('to')+' '+f(mx),8,h-6)}
+$('gtabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;gmode=+b.dataset.g;document.querySelectorAll('#gtabs button').forEach(x=>x.classList.toggle('on',x===b))};
+const orb=(b,f)=>{const k=kep(b);return k&&k.per&&k.ecc<.6&&f(k)?k:null};
+const sun=()=>mk('star','Sun',20000,22,'#ffd27a',0,0,0,0);
+function stable(note,pick,need){let best=0;for(const b of bodies){if(!b.mine)continue;const k=orb(b,pick(b));if(k)best=Math.max(best,Math.min(1,b.age/(k.per*need)))}return best}
+const CH=[
+{id:'first',t:'First orbit',d:'Place a planet in a stable orbit around a star and keep it there for one full orbit.',setup:sun,
+ check(){const v=stable(0,b=>k=>b.t==='planet'&&k.p.t==='star',1);this.note=tr('Best so far: {0}% of one orbit',Math.round(v*100));return v>=1}},
+{id:'moon',t:'Moon patrol',d:'Make something orbit a planet for two full orbits while the planet circles its star.',setup(){sun();const v=orbitVel(bodies[0],200,0,40,1,1);mk('planet','Terra',40,5,'#4f9dff',200,0,v[0],v[1])},
+ check(){const v=stable(0,b=>k=>k.p.t==='planet',2);this.note=tr('Best so far: {0}% of two orbits',Math.round(v*100));return v>=1}},
+{id:'goldi',t:'Goldilocks',d:'Keep a planet between 0 and 40 °C for one full orbit around its star.',setup:sun,
+ check(){const v=stable(0,b=>k=>{const c=climN(b);return b.t==='planet'&&k.p.t==='star'&&c&&c.T>0&&c.T<40},1);this.note=tr('Best so far: {0}% of one orbit',Math.round(v*100));return v>=1}},
+{id:'system',t:'Build a system',d:'Get 3 planets into stable orbits around the same star, each for a full orbit.',setup:sun,
+ check(){const m=new Map();for(const b of bodies){if(!b.mine||b.t!=='planet')continue;const k=orb(b,k=>k.p.t==='star');if(k&&b.age>=k.per)m.set(k.p,(m.get(k.p)||0)+1)}const n=Math.max(0,...m.values());this.note=tr('{0} of 3 planets',n);return n>=3}},
+{id:'escape',t:'Escape artist',d:'Launch an object fast enough to leave a star for good. Drag in Point placement to set a velocity.',setup:sun,
+ check(){for(const b of bodies){if(!b.mine)continue;const k=kep(b);if(k&&k.p.t==='star'&&k.ecc>1.05&&k.out&&k.r>150&&b.age>2)return true}return false}},
+{id:'break',t:'Break a planet',d:'Let a planet get too close to a star or black hole and watch it break up.',setup(){sun();mk('planet','Doomed',20,6,'#5aa9ff',160,0,0,0)},check(){return stats.broken>0}},
+{id:'feed',t:'Feed a black hole',d:'Make a black hole swallow a planet.',setup(){mk('bh','Maw',60000,0,'#000000',0,0,0,0);mk('planet','Snack',20,6,'#c98b5a',200,0,0,0)},check(){return stats.fed>0}}];
+function chk(){for(const c of CH){if(done[c.id])continue;let ok=false;try{ok=c.check()}catch(e){}const el=$('cn-'+c.id);if(el&&c.note)el.textContent=c.note;
+ if(ok){done[c.id]=1;saveSet();sfxWin();toast(tr('Challenge complete: {0}',chL(c)[0]));if(tab==='c')renderCh()}}}
+function renderCh(){$('dl').innerHTML=CH.map((c,i)=>{const l=chL(c);return`<div class="ch${done[c.id]?' done':''}"><b>${l[0]}</b><div style="color:var(--mu);margin:3px 0 6px">${l[1]}</div><button data-su="${i}" style="width:100%">${tr('Set up this challenge')}</button><div id="cn-${c.id}" style="margin-top:5px;color:var(--ac)">${done[c.id]?tr('Completed'):(c.note||'')}</div></div>`}).join('')+`<div style="color:var(--mu);margin-top:8px">${tr('{0} of {1} completed',Object.keys(done).length,CH.length)}</div>`}
+$('dl').onclick=e=>{const pr=e.target.closest('[data-pr]');if(pr){loadPreset(PRE[+pr.dataset.pr]);return}const b=e.target.closest('[data-su]');if(!b)return;const c=CH[+b.dataset.su];pushUndo();clearRW();hist=[];follow=null;folLabel();bodies=[];cnt={};refresh();sel=parent=null;cam={x:0,y:0,z:.9};stats.broken=stats.fed=0;c.setup();toast(tr('Challenge started: {0}',chL(c)[0]))}
+function setTab(t){tab=t;['d','c','p'].forEach(k=>$('tab'+k).classList.toggle('on',k===t));$('dq').classList.toggle('hide',t!=='d');t==='d'?renderDict():t==='c'?renderCh():renderPre()}
+$('tabd').onclick=()=>setTab('d');$('tabc').onclick=()=>setTab('c');$('chbtn').onclick=()=>{$('dict').classList.remove('hide');setTab('c')};
+/* tooltips */
+function showTip(html,x,y,live){const t=$('tip');t.innerHTML=html;t.style.left=Math.max(4,Math.min(x,innerWidth-275))+'px';t.style.top=Math.max(4,Math.min(y,innerHeight-120))+'px';t.style.pointerEvents=live?'auto':'none';t.classList.remove('hide')}
+function hideTip(){$('tip').classList.add('hide')}
+function tipCanvas(e){if(e.pointerType==='touch'||aim||drag||pan)return hideTip();const h=pick(e.offsetX,e.offsetY);if(!h)return hideTip();showTip(`<b>${esc(h.name)}</b><br>${tr(h.t==='bh'?'black hole':h.t)} · ${tr('mass')} ${fM(h.m)}${tool==='select'?'<br>'+tr('Click to inspect'):''}`,e.clientX+14,e.clientY+14,false)}
+const TIPS={pRoche:'roche',pHZ:'habitable',pLag:'lagrange',pLens:'lensing',pReal:'units',ccw:'orbit',cw:'orbit',sf:'circular',mass:'mass',smass:'mass',tr:'trail',svel:'launch',fol:'follow',rw:'rewind',undo:'rewind',sfol:'follow'};
+for(const id in TIPS)$(id).dataset.d=TIPS[id];
+document.querySelectorAll('#types button').forEach(b=>{if(b.dataset.t!=='select')b.dataset.d=b.dataset.t});
+document.querySelectorAll('#modes button').forEach(b=>b.dataset.d=b.dataset.m==='point'?'point':'orbitplace');
+let tipT;document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('[data-d]');if(!el)return;clearTimeout(tipT);tipT=setTimeout(()=>{const d=DICT.find(x=>x[0]===el.dataset.d);if(!d)return;const dl=dloc(d);const r=el.getBoundingClientRect();
+ showTip(`<b>${dl[0]}</b><br>${dl[1].split('. ')[0].replace(/\.$/,'')}.<a data-open="${d[0]}">${tr('Open in dictionary →')}</a>`,r.right+8,r.top,true)},450)});
+document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('[data-d]')){clearTimeout(tipT);tipT=setTimeout(()=>{if(!$('tip').matches(':hover'))hideTip()},300)}});
+$('tip').onmouseleave=hideTip;$('tip').onclick=e=>{const a=e.target.closest('[data-open]');if(a){openDict(a.dataset.open);hideTip()}};
+/* ===== Alpha 1.3: polish ===== */
+function zoomAt(x,y,f){const b=s2w(x,y);cam.z=Math.min(8,Math.max(.05,cam.z*f));const a=s2w(x,y);cam.x+=b[0]-a[0];cam.y+=b[1]-a[1]}
+const neb=(()=>{const c=document.createElement('canvas');c.width=640;c.height=400;const g=c.getContext('2d');g.globalCompositeOperation='lighter';
+ [[.25,.35,.5,'90,60,200'],[.7,.6,.55,'30,140,170'],[.5,.15,.35,'170,60,140'],[.85,.2,.3,'60,90,200']].forEach(([x,y,r,col])=>{const gr=g.createRadialGradient(x*640,y*400,0,x*640,y*400,r*400);gr.addColorStop(0,`rgba(${col},.22)`);gr.addColorStop(1,`rgba(${col},0)`);g.fillStyle=gr;g.fillRect(0,0,640,400)});return c})();
+function flare(x,y,r,b){const t=performance.now()/1000;ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=b.c+'55';ctx.lineCap='round';
+ for(let i=0;i<6;i++){const a=t*.08+i*TAU/6+b.id,L=r*(2.4+.7*Math.sin(t*1.7+i*2+b.id));ctx.lineWidth=Math.max(1.2,r*.16);ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r*.9,y+Math.sin(a)*r*.9);ctx.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L);ctx.stroke()}ctx.restore()}
+function lightOf(b){let best=null,bk=0;for(const s of S){if(s.t!=='star')continue;const dx=s.x-b.x,dy=s.y-b.y,d2=dx*dx+dy*dy+1,k=lum(s)/d2;if(k>bk){bk=k;best=[dx,dy,Math.sqrt(d2)]}}return best&&[best[0]/best[2],best[1]/best[2]]}
+/* sound (all synthesised, no files) */
+let AC,mg,ambN=null,lastS=0;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();mg=AC.createGain();mg.gain.value=set.vol;mg.connect(AC.destination);if(set.amb)ambient(1)}catch(e){}}else if(AC.state==='suspended')AC.resume()}
+function tone(f,d,ty,v,f2){if(!AC||!set.sfx)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=ty||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.2,t);g.gain.exponentialRampToValueAtTime(1e-4,t+d);o.connect(g);g.connect(mg);o.start(t);o.stop(t+d)}
+function hiss(d,v,fc){if(!AC||!set.sfx)return;const n=(AC.sampleRate*d)|0,buf=AC.createBuffer(1,n,AC.sampleRate),a=buf.getChannelData(0);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain(),t=AC.currentTime;s.buffer=buf;f.type='bandpass';f.frequency.value=fc;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(1e-4,t+d);s.connect(f);f.connect(g);g.connect(mg);s.start(t)}
+const sfxPlace=t=>tone({star:330,planet:440,asteroid:880,bh:110}[t]||440,.18,'sine',.15,t==='bh'?55:0);
+function sfxMerge(a,o){const n=performance.now();if(n-lastS<120)return;lastS=n;if(a.t==='asteroid'||o.t==='asteroid')tone(260,.08,'triangle',.08);else{tone(110,.4,'sine',.3,40);hiss(.3,.15,300)}}
+function sfxBreak(){hiss(.7,.35,1500);tone(70,.5,'sawtooth',.12,30)}
+function sfxWin(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.25,'triangle',.15),i*110))}
+function ambient(on){if(!AC)return;if(ambN){ambN.forEach(n=>{try{n.stop()}catch(e){}});ambN=null}if(!on)return;const g=AC.createGain();g.gain.value=.05;g.connect(mg);const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=500;f.connect(g);ambN=[];
+ for(const fr of[55,82.4,110.3,164.9]){const o=AC.createOscillator(),lg=AC.createGain(),l=AC.createOscillator(),lq=AC.createGain();o.frequency.value=fr;lg.gain.value=.25;l.frequency.value=.05+Math.random()*.1;lq.gain.value=.2;l.connect(lq);lq.connect(lg.gain);o.connect(lg);lg.connect(f);o.start();l.start();ambN.push(o,l)}}
+/* settings */
+function applySet(){document.documentElement.dataset.theme=set.theme;document.querySelectorAll('[data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===set.theme));document.querySelectorAll('[data-q]').forEach(b=>b.classList.toggle('on',+b.dataset.q===set.q));$('sfxb').classList.toggle('on',!!set.sfx);$('ambb').classList.toggle('on',!!set.amb);$('vol').value=set.vol;if(mg)mg.gain.value=set.vol}
+function saveSet(){try{localStorage.setItem('orbitm',JSON.stringify({set,done}))}catch(e){}}
+try{const d=JSON.parse(localStorage.getItem('orbitm')||'{}');Object.assign(set,d.set||{});Object.assign(done,d.done||{})}catch(e){}
+$('setbtn').onclick=()=>$('set').classList.remove('hide');$('setx').onclick=()=>$('set').classList.add('hide');
+document.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{set.theme=b.dataset.th;applySet();saveSet()});
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{set.q=+b.dataset.q;applySet();saveSet()});
+$('sfxb').onclick=()=>{set.sfx=set.sfx?0:1;audioInit();applySet();saveSet()};
+$('ambb').onclick=()=>{set.amb=set.amb?0:1;audioInit();ambient(set.amb);applySet();saveSet()};
+$('vol').oninput=e=>{set.vol=+e.target.value;applySet();saveSet()};
+$('phide').onclick=()=>{$('panel').classList.add('hide');$('pshow').classList.remove('hide')};$('pshow').onclick=()=>{$('panel').classList.remove('hide');$('pshow').classList.add('hide')};
+if(innerWidth<760)$('phide').click();
+applySet();
+/* ===== Alpha 1.4: menus ===== */
+const VERS=[
+['Alpha 1.5','Camera, history and language',['Follow camera: lock the view on an object or on the centre of mass.','Undo (Ctrl+Z) and Rewind: scrub back through the last 60 seconds of simulation and continue from any moment.','Seven presets: demo, solar system, binary star, figure-eight three-body orbit, rogue black hole, Trojan asteroids and a blank sandbox.','Full French translation of the menus, dictionary, challenges, tooltips and version history. Choose the language in Settings.','Saved systems now remember which planets are rigid (immune to tidal breakup).']],
+['Alpha 1.4','Menus',['Added a main menu with Play, Dictionary, Version history and Settings.','Added a pause menu: press Esc during the game (or the Menu button) for Resume, Save, Load, Settings and Quit to main menu.','Added this version history.']],
+['Alpha 1.3','Information, learning and polish',['Live graphs of distance, speed and orbital energy for the selected object.','Seven guided challenges with progress saved in your browser.','Hover tooltips on controls that link to the dictionary.','Touch support: pinch to zoom, two fingers to move, and a button to hide the side panel.','Synthesised sound effects and optional ambient sound.','Nebula background, rotating star flares, and banded planets lit by their star.','Settings: menu theme, graphics quality, sound and volume.']],
+['Alpha 1.2','Physics and realism',['Tidal breakup: planets that get too close to a much heavier body are torn into asteroids.','Habitable zones around stars, and temperature estimates for planets.','Lagrange points L1 to L5 for the selected object.','Black holes bend the light of background stars and have a spinning disk and jets.','Real units: AU, solar and Earth masses, km/s, days and years.']],
+['Alpha 1.1','Launch, editing, sharing and dictionary',['Drag in Point placement to launch an object with a velocity, with a predicted path.','Edit the selected object: name, mass, size, colour and velocity. Drag it to move it.','Save and load systems as files, and share them with a link.','Added the dictionary, which explains every object and piece of physics in the game.']],
+['Alpha 1.0','First version',['Stars, planets, asteroids and black holes with custom names, masses and sizes.','Point placement (starts at rest) and Orbit placement with a distance line and a dotted orbit preview.','Selecting an object shows its real orbit as a dotted line that updates live.','Gravity simulation with merging collisions, pause, speed control, trails, zoom and pan.','A demo solar system.']]];
+$('vlist').innerHTML=VERS.map((v,i)=>`<h3>${v[0]}${i?'':' (current)'} · ${v[1]}</h3><ul>${v[2].map(t=>`<li>${t}</li>`).join('')}</ul>`).join('');
+function play(){inMenu=false;document.body.classList.remove('inmenu');$('menu').classList.add('hide');$('dict').classList.add('hide');$('set').classList.add('hide')}
+function toMenu(){inMenu=true;document.body.classList.add('inmenu');$('menu').classList.remove('hide');$('mmain').classList.remove('hide');$('mhistv').classList.add('hide');$('dict').classList.add('hide');$('set').classList.add('hide');aim=null;tapOrb=null;drag=null;velEdit=false;paused=false;$('pause').textContent=tr('Pause');undoSt=[];demo();ui()}
+function openPM(){pmOpen=true;hideTip();$('pm').classList.remove('hide')}
+let qc=0,qt;const resetQuit=()=>{qc=0;clearTimeout(qt);$('pmq').textContent=tr('Quit to main menu')};
+function closePM(){pmOpen=false;$('pm').classList.add('hide');resetQuit()}
+$('mplay').onclick=play;$('mdict').onclick=()=>openDict();$('mset').onclick=()=>$('set').classList.remove('hide');
+$('mhist').onclick=()=>{$('mmain').classList.add('hide');$('mhistv').classList.remove('hide')};$('mback').onclick=()=>{$('mhistv').classList.add('hide');$('mmain').classList.remove('hide')};
+$('bmenu').onclick=openPM;$('pmr').onclick=closePM;$('pms').onclick=()=>$('save').click();$('pml').onclick=()=>$('load').click();$('pmt').onclick=()=>$('set').classList.remove('hide');
+$('pmq').onclick=()=>{if(!qc){qc=1;$('pmq').textContent=tr('Unsaved changes are lost. Click again');qt=setTimeout(resetQuit,3500);return}closePM();toMenu()};
+document.addEventListener('pointerdown',audioInit);
+/* ===== Alpha 1.5: follow, undo/rewind, presets, French ===== */
+const snapNow=()=>({b:bodies.map(b=>[b.id,b.t,b.name,b.m,b.r,b.c,b.x,b.y,b.vx,b.vy,b.age,b.mine?1:0,b.safe?1:0])});
+function loadSnap(sn){const pi=parent&&parent.id,si=sel&&sel.id,fi=follow&&follow!=='com'?follow.id:null;
+ bodies=sn.b.map(a=>({id:a[0],t:a[1],name:a[2],m:a[3],r:a[4],c:a[5],x:a[6],y:a[7],vx:a[8],vy:a[9],age:a[10],mine:a[11]?1:0,safe:a[12]?1:0,ax:0,ay:0,tr:[],h:[]}));refresh();
+ const f=i=>i==null?null:bodies.find(b=>b.id===i)||null;parent=f(pi);sel=f(si);if(fi!=null)follow=f(fi);folLabel()}
+function pushUndo(){undoSt.push(snapNow());if(undoSt.length>60)undoSt.shift()}
+function undo(){if(!undoSt.length){toast(tr('Nothing to undo'));return}loadSnap(undoSt.pop())}
+$('undo').onclick=undo;
+['sname','smass','srd','sc'].forEach(i=>$(i).addEventListener('focus',pushUndo));
+function rwButton(){$('rw').textContent=tr(rw?'Play from here':'Rewind');$('rw').classList.toggle('on',rw);$('rws').classList.toggle('hide',!rw);$('rwl').classList.toggle('hide',!rw)}
+function clearRW(){if(rw){rw=false;paused=false;$('pause').textContent=tr('Pause')}rwButton()}
+function endRW(){if(!rw)return;const i=+$('rws').value;rw=false;hist.length=i+1;loadSnap(hist[i]);paused=false;$('pause').textContent=tr('Pause');rwButton()}
+$('rw').onclick=()=>{if(rw){endRW();return}if(hist.length<2){toast(tr('Not enough history yet'));return}rw=true;paused=true;$('pause').textContent=tr('Resume');$('rws').max=hist.length-1;$('rws').value=hist.length-1;$('rwl').textContent='0.0 s';rwButton()};
+$('rws').oninput=e=>{const i=+e.target.value;loadSnap(hist[i]);$('rwl').textContent='−'+((hist.length-1-i)*.25).toFixed(1)+' s'};
+function folTarget(){if(!follow)return null;if(follow==='com'){let M=0,x=0,y=0;for(const b of bodies){M+=b.m;x+=b.m*b.x;y+=b.m*b.y}return M?[x/M,y/M]:null}if(!bodies.includes(follow)){follow=null;folLabel();return null}return[follow.x,follow.y]}
+function folLabel(){$('fol').textContent=tr('Follow')+': '+(follow?follow==='com'?tr('centre of mass'):follow.name:tr('off'));$('fol').classList.toggle('on',!!follow)}
+$('fol').onclick=()=>{follow=!follow?(sel||'com'):follow!=='com'?'com':null;folLabel()};
+$('sfol').onclick=()=>{if(sel){follow=sel;folLabel()}};
+/* presets */
+const rigid=b=>{b.safe=1;return b};
+const PRE=[
+{id:'demo',t:'Demo system',d:'The starter system: a star, three planets (one with a moon) and an asteroid belt.',z:.9,setup(){demo()}},
+{id:'solar',t:'Solar system',d:'The Sun with Mercury to Saturn at real distances and masses. Sizes are exaggerated.',z:.22,setup(){const s=sun();[['Mercury',.39,.0033,2.5,'#a8a29a'],['Venus',.72,.049,4,'#e8c88a'],['Earth',1,.0601,4.5,'#4f9dff'],['Mars',1.52,.0064,3.2,'#c9694a'],['Jupiter',5.2,19.1,11,'#e6b87a'],['Saturn',9.58,5.7,9,'#e8d6a0']].forEach(([n,a,m,r,c],i)=>{const d=a*200,an=i*1.1+.3,x=Math.cos(an)*d,y=Math.sin(an)*d,v=orbitVel(s,x,y,m,1,1);rigid(mk('planet',n,m,r,c,x,y,v[0],v[1]))})}},
+{id:'binary',t:'Binary star',d:'Two stars orbiting each other, with two planets circling both of them.',z:.7,setup(){const mA=12000,mB=8000,M=20000,D=180,v=Math.sqrt(M/D);mk('star','Alpha',mA,19,'#ffd27a',-D*mB/M,0,0,v*mB/M);mk('star','Beta',mB,15,'#ff9a6a',D*mA/M,0,0,-v*mA/M);const c={x:0,y:0,vx:0,vy:0,m:M};
+ [[520,'Tatooine','#d9a35b'],[800,'Corusca','#7fd6ff']].forEach(([x,n,col],i)=>{const w=orbitVel(c,x,0,20,1,1);rigid(mk('planet',n,20,6,col,x*(i?-1:1),0,w[0]*(i?-1:1),w[1]*(i?-1:1)))})}},
+{id:'eight',t:'Figure-eight orbit',d:'Three equal stars chasing each other along a figure eight. Very delicate: it eventually falls apart.',z:1.1,setup(){const L=150,Mm=10000,k=Math.sqrt(Mm/L),p=[[.97000436,-.24308753],[-.97000436,.24308753],[0,0]],v=[[.466203685,.43236573],[.466203685,.43236573],[-.93240737,-.86473146]],c=['#ffd27a','#7fd6ff','#ff9a8a'];p.forEach((q,i)=>mk('star',['Alpha','Beta','Gamma'][i],Mm,12,c[i],q[0]*L,q[1]*L,v[i][0]*k,v[i][1]*k))}},
+{id:'rogue',t:'Rogue black hole',d:'The demo system with a massive black hole rushing in from the side.',z:.45,setup(){demo();mk('bh','Rogue',60000,0,'#000000',1800,320,-20,0)}},
+{id:'trojan',t:'Trojan asteroids',d:'A giant planet with clouds of asteroids trapped 60° ahead of and behind it (L4 and L5).',z:.8,setup(){const s=sun(),R=300,v=orbitVel(s,R,0,200,1,1);mk('planet','Jove',200,12,'#e6b87a',R,0,v[0],v[1]);
+ for(const sg of[-1,1])for(let i=0;i<40;i++){const a=sg*Math.PI/3+(Math.random()-.5)*.35,d=R+(Math.random()-.5)*16,x=Math.cos(a)*d,y=Math.sin(a)*d,w=orbitVel(s,x,y,.01,1,1);mk('asteroid','',.01,1.4,'#a39b8f',x,y,w[0],w[1])}}},
+{id:'blank',t:'Blank sandbox',d:'Nothing at all. Over to you.',z:1,setup(){}}];
+const preL=p=>set.lang==='fr'&&PREFR[p.id]?PREFR[p.id]:[p.t,p.d];
+function renderPre(){$('dl').innerHTML=PRE.map((p,i)=>{const l=preL(p);return`<div class="ch"><b>${l[0]}</b><div style="color:var(--mu);margin:3px 0 6px">${l[1]}</div><button data-pr="${i}" style="width:100%">${tr('Load')}</button></div>`}).join('')}
+function loadPreset(p){pushUndo();clearRW();hist=[];follow=null;bodies=[];cnt={};refresh();sel=parent=null;stats.broken=stats.fed=0;p.setup();cam={x:0,y:0,z:p.z||.9};folLabel();$('dict').classList.add('hide');if(inMenu)play();toast(tr('Preset loaded: {0}',preL(p)[0]))}
+$('prebtn').onclick=()=>{$('dict').classList.remove('hide');setTab('p')};$('mpre').onclick=()=>{$('dict').classList.remove('hide');setTab('p')};$('tabp').onclick=()=>setTab('p');
+/* ===== French ===== */
+const FRA={star:'une étoile',planet:'une planète',asteroid:'un astéroïde',bh:'un trou noir'};
+const tr=(s,...a)=>{let r=(set.lang==='fr'&&FR[s])||s;a.forEach((v,i)=>{r=r.replace('{'+i+'}',v)});return r};
+const dloc=d=>set.lang==='fr'&&DFR[d[0]]?DFR[d[0]]:[d[1],d[2]];
+const chL=c=>set.lang==='fr'&&CHFR[c.id]?CHFR[c.id]:[c.t,c.d];
+const FR={'Hide':'Masquer','What to place':'Quoi placer','Star':'Étoile','Planet':'Planète','Asteroid':'Astéroïde','Black hole':'Trou noir','Inspect':'Inspecter','Placement':'Placement','Point (at rest)':'Point (au repos)','Orbit':'Orbite','Counter-clockwise':'Sens antihoraire','Clockwise':'Sens horaire','Orbit speed ×':'Vitesse orbitale ×','(1 = circular)':'(1 = circulaire)','Name (blank = automatic)':'Nom (vide = automatique)','Mass':'Masse','Size':'Taille','Colour':'Couleur','How many (1–300)':'Combien (1–300)','Selected object':'Objet sélectionné','Distance':'Distance','Speed':'Vitesse','Energy':'Énergie','Last 75 s of simulation time':'75 dernières secondes de simulation','Name':'Nom','Set velocity':'Définir la vitesse','Stop it':'L’arrêter','Learn about this':'En savoir plus','Delete':'Supprimer','Follow this':'Suivre cet objet','Physics and realism':'Physique et réalisme','Tidal breakup':'Rupture par marée','Habitable zones':'Zones habitables','Lagrange points':'Points de Lagrange','Black hole lensing':'Lentille des trous noirs','Real units':'Unités réelles','Project':'Projet','Save file':'Enregistrer','Load file':'Charger un fichier','Share link':'Lien de partage','Dictionary':'Dictionnaire','Challenges':'Défis','Presets':'Préréglages','Settings':'Réglages','Camera':'Caméra','Scroll to zoom. Right-drag or middle-drag to move. Space pauses, Esc opens the menu.':'Molette pour zoomer. Clic droit ou molette enfoncée pour déplacer. Espace met en pause, Échap ouvre le menu.','Panel':'Panneau','Menu':'Menu','Pause':'Pause','Resume':'Reprendre','Trails':'Traînées','Names':'Noms','Reset view':'Recentrer','Demo system':'Système démo','Clear all':'Tout effacer','Undo':'Annuler','Rewind':'Rembobiner','Play from here':'Reprendre ici','Close':'Fermer','Search…':'Rechercher…','Theme (menus; space stays dark)':'Thème (menus ; l’espace reste sombre)','Dark':'Sombre','Light':'Clair','Graphics quality':'Qualité graphique','Low':'Basse','Medium':'Moyenne','High':'Haute','Language':'Langue','Sound':'Son','Effects':'Effets','Ambient':'Ambiance','Volume':'Volume','A gravity sandbox':'Un bac à sable gravitationnel','Play':'Jouer','Version history':'Historique des versions','Back':'Retour','Paused':'En pause','Save':'Enregistrer','Load':'Charger','Quit to main menu':'Quitter vers le menu principal','Unsaved changes are lost. Click again':'Modifications non enregistrées perdues. Cliquez à nouveau',
+'Follow':'Suivre','centre of mass':'centre de masse','off':'désactivé','Not enough history yet':'Pas encore assez d’historique','Nothing to undo':'Rien à annuler','objects':'objets','Collecting data…':'Collecte des données…','now':'maintenant','to':'à','distance':'distance','speed':'vitesse','period':'période','escapes':'s’échappe','mass':'masse','size':'taille','orbits':'orbite autour de','eccentricity':'excentricité','none (not bound)':'aucune (non liée)','Not orbiting anything':'Ne tourne autour de rien','Nothing selected.':'Aucun objet sélectionné.','star':'étoile','planet':'planète','asteroid':'astéroïde','black hole':'trou noir','No star is heating it':'Aucune étoile ne la chauffe','About {0} °C · in the habitable zone':'Environ {0} °C · dans la zone habitable','About {0} °C · outside the habitable zone':'Environ {0} °C · hors de la zone habitable','habitable zone':'zone habitable','Click to inspect':'Cliquez pour inspecter','Open in dictionary →':'Ouvrir dans le dictionnaire →','No match.':'Aucun résultat.','debris':'débris','{0} was torn apart by {1}':'{0} a été déchiqueté par {1}','yr':'ans','days':'jours','AU':'UA','current':'actuelle',
+'Click to place {0} at rest, or drag to launch it':'Cliquez pour placer {0} au repos, ou glissez pour le lancer','Drag anywhere to set the velocity of the selected object':'Glissez n’importe où pour définir la vitesse de l’objet sélectionné','Click an object to see its orbit · drag it to move it':'Cliquez sur un objet pour voir son orbite · glissez-le pour le déplacer','Click the object it should orbit':'Cliquez sur l’objet autour duquel il doit orbiter','Move and click to place · Esc to pick another object':'Déplacez et cliquez pour placer · Échap pour choisir un autre objet',
+'That file could not be read':'Ce fichier est illisible','System loaded':'Système chargé','Too big for a link. Use Save file instead.':'Trop gros pour un lien. Utilisez plutôt Enregistrer.','Link copied. Anyone with it sees your system.':'Lien copié. Toute personne qui l’a verra votre système.','Copy the link from the address bar':'Copiez le lien depuis la barre d’adresse','Set up this challenge':'Lancer ce défi','Completed':'Terminé','{0} of {1} completed':'{0} sur {1} terminés','Best so far: {0}% of one orbit':'Meilleur essai : {0} % d’une orbite','Best so far: {0}% of two orbits':'Meilleur essai : {0} % de deux orbites','{0} of 3 planets':'{0} planète(s) sur 3','Challenge complete: {0}':'Défi réussi : {0}','Challenge started: {0}':'Défi lancé : {0}','Preset loaded: {0}':'Préréglage chargé : {0}'};
+const PREFR={demo:['Système démo','Le système de départ : une étoile, trois planètes dont une avec sa lune, et une ceinture d’astéroïdes.'],solar:['Système solaire','Le Soleil avec Mercure à Saturne, à leurs vraies distances et masses. Les tailles sont exagérées.'],binary:['Étoile double','Deux étoiles qui tournent l’une autour de l’autre, avec deux planètes qui les contournent toutes les deux.'],eight:['Orbite en huit','Trois étoiles égales qui se poursuivent le long d’un huit. Très fragile : elle finit par se dérégler.'],rogue:['Trou noir errant','Le système démo, avec un trou noir massif qui arrive de côté à grande vitesse.'],trojan:['Astéroïdes troyens','Une planète géante avec des nuages d’astéroïdes piégés 60° devant et derrière elle (L4 et L5).'],blank:['Bac à sable vide','Rien du tout. À vous de jouer.']};
+const CHFR={first:['Première orbite','Placez une planète sur une orbite stable autour d’une étoile et gardez-la ainsi pendant un tour complet.'],moon:['Patrouille lunaire','Faites tourner quelque chose autour d’une planète pendant deux tours complets, pendant que la planète tourne autour de son étoile.'],goldi:['Boucle d’or','Gardez une planète entre 0 et 40 °C pendant un tour complet autour de son étoile.'],system:['Construire un système','Placez 3 planètes sur des orbites stables autour de la même étoile, chacune pendant un tour complet.'],escape:['Évadé','Lancez un objet assez vite pour qu’il quitte définitivement une étoile. Glissez en placement au point pour définir une vitesse.'],break:['Briser une planète','Laissez une planète s’approcher trop près d’une étoile ou d’un trou noir et regardez-la se briser.'],feed:['Nourrir un trou noir','Faites avaler une planète à un trou noir.']};
+const VERSFR=[['Caméra, historique et langue',['Caméra de suivi : verrouillez la vue sur un objet ou sur le centre de masse.','Annuler (Ctrl+Z) et Rembobiner : remontez dans les 60 dernières secondes de simulation et reprenez depuis n’importe quel instant.','Sept préréglages : démo, système solaire, étoile double, orbite en huit à trois corps, trou noir errant, astéroïdes troyens et bac à sable vide.','Traduction française complète des menus, du dictionnaire, des défis, des infobulles et de l’historique des versions. Choisissez la langue dans les Réglages.','Les systèmes enregistrés retiennent maintenant quelles planètes sont rigides (insensibles à la rupture par marée).']],
+['Menus',['Ajout d’un menu principal avec Jouer, Dictionnaire, Historique des versions et Réglages.','Ajout d’un menu pause : Échap pendant le jeu (ou le bouton Menu) pour Reprendre, Enregistrer, Charger, Réglages et Quitter vers le menu principal.','Ajout de cet historique des versions.']],
+['Information, apprentissage et finitions',['Graphiques en direct de la distance, de la vitesse et de l’énergie orbitale de l’objet sélectionné.','Sept défis guidés, avec progression enregistrée dans votre navigateur.','Infobulles au survol des commandes, avec lien vers le dictionnaire.','Gestion du tactile : pincer pour zoomer, deux doigts pour déplacer, et un bouton pour masquer le panneau latéral.','Effets sonores synthétisés et son d’ambiance facultatif.','Fond de nébuleuse, éruptions rotatives sur les étoiles, et planètes à bandes éclairées par leur étoile.','Réglages : thème des menus, qualité graphique, son et volume.']],
+['Physique et réalisme',['Rupture par marée : les planètes trop proches d’un corps bien plus lourd sont déchirées en astéroïdes.','Zones habitables autour des étoiles et estimation de la température des planètes.','Points de Lagrange L1 à L5 pour l’objet sélectionné.','Les trous noirs courbent la lumière des étoiles du fond et ont un disque en rotation et des jets.','Unités réelles : UA, masses solaires et terrestres, km/s, jours et années.']],
+['Lancement, édition, partage et dictionnaire',['Glissez en placement au point pour lancer un objet avec une vitesse, avec la trajectoire prévue.','Modifiez l’objet sélectionné : nom, masse, taille, couleur et vitesse. Glissez-le pour le déplacer.','Enregistrez et chargez des systèmes sous forme de fichiers, et partagez-les avec un lien.','Ajout du dictionnaire, qui explique chaque objet et chaque élément de physique du jeu.']],
+['Première version',['Étoiles, planètes, astéroïdes et trous noirs avec nom, masse et taille personnalisés.','Placement au point (au repos) et placement en orbite, avec ligne de distance et aperçu pointillé de l’orbite.','Sélectionner un objet affiche sa vraie orbite en pointillés, mise à jour en direct.','Simulation de gravité avec collisions par fusion, pause, réglage de la vitesse, traînées, zoom et déplacement.','Un système solaire de démonstration.']]];
+const DFR={star:['Étoile','Une énorme boule de gaz très chaude qui produit sa propre lumière. Dans Orbitm, les étoiles sont en général les corps lourds autour desquels tournent les planètes. Deux étoiles qui se touchent fusionnent en une étoile plus lourde.'],
+planet:['Planète','Un corps rond qui tourne autour d’une étoile. Les planètes attirent les autres objets : une planète lourde peut garder des lunes. Quand deux planètes se percutent, elles fusionnent et la nouvelle taille conserve le volume total.'],
+asteroid:['Astéroïde','Un petit débris rocheux. Dans Orbitm, les astéroïdes subissent l’attraction de toutes les étoiles, planètes et trous noirs, mais n’attirent personne en retour : leur masse est trop faible pour compter. Ils sont absorbés par ce qu’ils touchent.'],
+bh:['Trou noir','De la masse tassée si fort que rien, pas même la lumière, ne peut sortir de son horizon des événements. De loin, il attire comme n’importe quel objet de même masse. Dans Orbitm, il avale tout ce qui le touche.'],
+horizon:['Horizon des événements','La frontière autour d’un trou noir au-delà de laquelle rien ne revient. Le rayon réel vaut 2GM/c². Orbitm dessine une taille simplifiée qui croît avec la masse (masse × 0,00025, au moins 4) : elle sert au jeu, pas à l’échelle.'],
+accretion:['Disque d’accrétion','Du gaz qui tourbillonne vers un trou noir et que le frottement chauffe. Dans Orbitm, la lueur orange et l’anneau sont purement décoratifs et ne changent pas la physique.'],
+mass:['Masse','La quantité de matière d’un objet. Plus de masse signifie une attraction plus forte sur les autres objets. Dans Orbitm, la masse n’a pas d’unité : les nombres servent seulement à comparer les objets.'],
+gravity:['Gravité','Tout objet qui a une masse attire tous les autres. D’après la loi de Newton, la force vaut G × m1 × m2 / distance². Si la distance double, la force est divisée par quatre. Orbitm calcule cela entre chaque paire d’objets à chaque pas.'],
+g:['Constante gravitationnelle (G)','Le nombre qui fixe l’intensité de la gravité. Orbitm prend G = 1 pour garder des nombres simples. En unités SI, elle vaut environ 6,67 × 10⁻¹¹.'],
+orbit:['Orbite','Tomber autour de quelque chose au lieu de tomber dessus. Un objet en orbite avance de côté assez vite pour toujours manquer ce vers quoi il tombe.'],
+circular:['Orbite circulaire','Une orbite à distance constante. La vitesse nécessaire est √(G × M / r), où M est la masse autour de laquelle on tourne et r la distance. Le placement en orbite avec une vitesse ×1,00 donne ce résultat.'],
+elliptical:['Orbite elliptique','Une orbite ovale. Partir plus lentement qu’en orbite circulaire fait tomber l’objet plus près, et il accélère près du centre. Partir plus vite l’envoie plus loin. Le corps central est à un foyer de l’ovale, pas au milieu.'],
+eccentricity:['Excentricité','À quel point une orbite est allongée. 0 est un cercle, entre 0 et 1 une ellipse, 1 une parabole, et au-dessus de 1 une hyperbole (l’objet ne revient jamais). Elle est affichée dans le panneau Inspecter.'],
+period:['Période orbitale','Le temps d’un tour complet, en secondes de simulation. Les grandes orbites sont plus lentes : le carré de la période croît comme le cube de la taille de l’orbite (troisième loi de Kepler).'],
+speed:['Vitesse','La rapidité d’un objet, en unités par seconde (u/s). Sur une orbite, elle est maximale au point le plus proche et minimale au point le plus éloigné.'],
+escape:['Vitesse de libération','La vitesse nécessaire pour partir définitivement, soit environ 1,41 (√2) fois la vitesse circulaire. Le curseur de vitesse orbitale monte jusqu’à 1,5 : vous pouvez donc l’essayer.'],
+point:['Placement au point','L’objet démarre au repos, donc il tombe vers la masse la plus proche. Glissez avant de relâcher pour le lancer avec une vitesse.'],
+orbitplace:['Placement en orbite','Vous choisissez l’objet à orbiter, puis vous placez le nouveau. Orbitm lui donne la vitesse d’une orbite autour de cet objet, plus la vitesse propre de celui-ci, si bien que les lunes suivent leur planète. L’aperçu en pointillés ignore l’attraction des autres corps.'],
+launch:['Vitesse de lancement','En placement au point, glissez avant de relâcher. La flèche dorée montre la direction et la vitesse. Chaque tranche de 2 unités de glissement vaut 1 u/s. La ligne pointillée dorée est la trajectoire autour du corps qui attire le plus. Vous pouvez faire de même sur un objet déjà placé avec Définir la vitesse.'],
+dotted:['Lignes pointillées','Vert : aperçu de l’orbite que vous placez. Blanc : orbite actuelle de l’objet sélectionné, recalculée à chaque image. Doré : trajectoire de lancement. Elles supposent que seul le corps qui attire le plus agit, donc le vrai trajet peut dériver.'],
+primary:['Corps principal','Le corps plus lourd autour duquel un objet tourne surtout. Orbitm choisit le corps plus lourd qui attire le plus l’objet sélectionné. Le plus gros objet d’un système n’a pas de corps principal.'],
+momentum:['Quantité de mouvement','Masse × vitesse. Quand des objets fusionnent, la quantité de mouvement totale est conservée : le nouvel objet va à la vitesse moyenne pondérée par les masses. Une grosse planète remarque à peine un petit astéroïde.'],
+merge:['Collisions et fusions','Les objets qui se touchent fusionnent. L’étoile, la planète ou le trou noir le plus lourd garde son identité, et les astéroïdes sont toujours absorbés. Les masses s’additionnent, la quantité de mouvement est conservée, et la taille augmente pour que les volumes s’additionnent. De vrais impacts produisent des débris et de la chaleur, ce qu’Orbitm omet.'],
+barycenter:['Barycentre','Le centre de masse d’un groupe de corps. Ils tournent autour de lui plutôt qu’autour du centre l’un de l’autre. Une grosse planète fait légèrement osciller son étoile, et Orbitm le montre car chaque corps attire tous les autres.'],
+hill:['Sphère de Hill','La région autour d’une planète où sa gravité l’emporte sur celle de l’étoile. Les lunes doivent y rester, et en pratique dans environ la moitié de son rayon, pour être stables. Rayon ≈ distance à l’étoile × (masse de la planète / (3 × masse de l’étoile))^(1/3).'],
+softening:['Adoucissement','Un petit nombre ajouté au carré de la distance dans la formule de gravité, pour que deux objets qui se frôlent ne reçoivent pas un coup infini. Orbitm ajoute 4 à la distance².'],
+integration:['Intégration saute-mouton','La simulation avance par tout petits pas (0,01 s au maximum) et met à jour vitesse et position en alternance. Cela garde les orbites stables longtemps, là où des méthodes plus simples dérivent lentement vers l’extérieur.'],
+trail:['Traînées','Des lignes pâles qui montrent où un objet est passé, avec un point toutes les 0,25 s de temps simulé. Désactivez-les avec le bouton Traînées.'],
+roche:['Limite de Roche et rupture par marée','Trop près d’un corps lourd, la différence d’attraction à travers un objet peut le déchirer. Dans Orbitm, une planète qui franchit la limite (0,7 × sa taille × la racine cubique du rapport des masses, formule simplifiée) se brise en 28 astéroïdes qui gardent sa quantité de mouvement. Les fragments n’attirent pas les autres. Option : Rupture par marée.'],
+habitable:['Zone habitable','La bande autour d’une étoile où une planète pourrait avoir de l’eau liquide. Orbitm donne à chaque étoile une luminosité tirée de sa masse (masse^3,5, comparée à l’étoile de référence de 20 000) et colore de 0,95 à 1,67 UA × la racine carrée de cette valeur. Les températures des planètes supposent 30 % de réflexion et aucun effet de serre.'],
+lagrange:['Points de Lagrange','Cinq endroits près de deux corps en orbite où un petit objet peut les suivre. L1, L2 et L3 sont sur la droite passant par les deux corps et sont instables. L4 et L5 sont à 60° devant et derrière le plus petit corps et peuvent être stables si le plus grand est au moins 25 fois plus lourd. Orbitm dessine des positions approximatives pour l’objet sélectionné et son corps principal.'],
+lensing:['Lentille gravitationnelle','Un objet massif courbe la lumière qui passe, donc les étoiles du fond semblent repoussées autour d’un trou noir, et celles juste derrière disparaissent. Orbitm utilise une formule simple de lentille ponctuelle. C’est purement visuel.'],
+jets:['Rotation du disque et jets','Le gaz d’un disque d’accrétion tourne plus vite près du trou, et le côté qui vient vers vous paraît plus brillant. Les trous noirs peuvent aussi émettre des jets le long de leur axe de rotation. Orbitm anime le disque et dessine deux jets pour l’effet seulement : ils ne poussent rien.'],
+follow:['Caméra de suivi','La caméra peut se verrouiller sur un objet sélectionné, ou sur le centre de masse de tout le système, et glisser avec lui. Déplacer la vue à la main relâche le verrou. Suivre le centre de masse garde tout un système à l’écran même s’il dérive.'],
+rewind:['Annuler et rembobiner','Annuler (Ctrl+Z) défait vos dernières modifications : placement, suppression, édition et chargement. Rembobiner remonte dans les 60 dernières secondes de simulation. Faites glisser le curseur, puis appuyez sur Reprendre ici pour continuer depuis cet instant, ce qui efface la suite de l’historique. Les traînées sont effacées quand vous revenez en arrière.'],
+energy:['Énergie orbitale','L’énergie orbitale spécifique vaut v²/2 − μ/r, où μ = G × (somme des deux masses). Négative, l’orbite est liée ; nulle, c’est une parabole ; positive, l’objet va s’échapper. Sur une orbite non perturbée elle reste constante : ses changements sur le graphique montrent l’attraction d’autres corps ou un passage rapproché.'],
+units:['Unités','Normalement la distance est en u, le temps en secondes de simulation et la masse sans unité. Unités réelles convertit avec 200 u = 1 UA, 20 000 de masse = 1 masse solaire et 125,66 s = 1 an, ce qui donne à une orbite proche de la Terre une vitesse de 29,8 km/s. Les tailles sont exagérées pour rester visibles : seuls masses, distances, vitesses et temps sont convertis.']};
+function renderHist(){$('vlist').innerHTML=VERS.map((v,i)=>{const f=set.lang==='fr'?VERSFR[i]:[v[1],v[2]];return`<h3>${v[0]}${i?'':' ('+tr('current')+')'} · ${f[0]}</h3><ul>${f[1].map(t=>`<li>${t}</li>`).join('')}</ul>`}).join('')}
+function applyLang(){const fr=set.lang==='fr';document.documentElement.lang=set.lang;
+ const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+ while(n=w.nextNode()){const p=n.parentElement;if(!p||/^(SCRIPT|STYLE)$/.test(p.tagName)||p.closest('#dl,#vlist,#selinfo,#hint,#toast,#tip,#cn,#rwl'))continue;if(n._o===undefined)n._o=n.nodeValue;const t=n._o.trim();n.nodeValue=fr&&FR[t]?n._o.replace(t,FR[t]):n._o}
+ $('dq').placeholder=tr('Search…');$('pause').textContent=tr(paused?'Resume':'Pause');folLabel();resetQuit();rwButton();renderHist();setTab(tab);$('hint').textContent='';hideTip();
+ document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.dataset.lang===set.lang))}
+document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{set.lang=b.dataset.lang;saveSet();applyLang()});
+applyLang();
+[['pRoche','roche'],['pHZ','hz'],['pLag','lag'],['pReal','real'],['pLens','lens']].forEach(([id,k])=>{const b=$(id);b.classList.toggle('on',!!fx[k]);b.onclick=()=>{fx[k]=fx[k]?0:1;b.classList.toggle('on',!!fx[k])}});
+loadForm();ui();
+if(!(location.hash.startsWith('#s=')&&(()=>{try{return restore(dec(location.hash.slice(3)))}catch(err){return false}})()))demo();
+requestAnimationFrame(loop);
+</script></body></html>
